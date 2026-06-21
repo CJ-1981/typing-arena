@@ -62,9 +62,9 @@
             border-radius: 2px;
         }
         .char-current { 
-            color: #06b6d4; /* cyan-500 */
-            background-color: rgba(6, 182, 212, 0.08);
-            border-left: 2px solid #06b6d4; 
+            color: var(--player-color);
+            background-color: rgba(var(--player-color-rgb), 0.1);
+            border-left: 2px solid var(--player-color); 
             animation: caretBlink 1s infinite; 
         }
         .char-untyped { 
@@ -72,7 +72,7 @@
         }
 
         @keyframes caretBlink {
-            0%, 100% { border-left-color: #06b6d4; }
+            0%, 100% { border-left-color: var(--player-color); }
             50% { border-left-color: transparent; }
         }
 
@@ -80,9 +80,54 @@
         ::-webkit-scrollbar-track { background: #0b0f19; }
         ::-webkit-scrollbar-thumb { background: #1f2937; border-radius: 3px; }
         ::-webkit-scrollbar-thumb:hover { background: #374151; }
+
+        /* === Player Theme Color ===
+           Driven by --player-color / --player-color-rgb CSS variables,
+           set on :root by applyPlayerTheme() whenever the player picks
+           a new avatar color. Surfaces below consume the variable so
+           the choice actually changes how the player's own UI feels.
+           Multiplayer opponents keep their own colorClass-based theming. */
+        :root {
+            --player-color: #8b5cf6;
+            --player-color-rgb: 139, 92, 246;
+        }
+
+        ::selection {
+            background-color: rgba(var(--player-color-rgb), 0.3);
+            color: #ffffff;
+        }
+
+        .player-text { color: var(--player-color); }
+
+        .player-focus:focus {
+            border-color: var(--player-color);
+            box-shadow: 0 0 15px rgba(var(--player-color-rgb), 0.45), 0 0 5px rgba(var(--player-color-rgb), 0.18);
+        }
+
+        .player-glow {
+            box-shadow: 0 0 15px rgba(var(--player-color-rgb), 0.5), 0 0 5px rgba(var(--player-color-rgb), 0.2);
+        }
+
+        .player-ring-soft {
+            border-color: rgba(var(--player-color-rgb), 0.28);
+            box-shadow: 0 0 24px rgba(var(--player-color-rgb), 0.08), inset 0 0 0 1px rgba(var(--player-color-rgb), 0.06);
+        }
+
+        .player-ring-swatch {
+            box-shadow: 0 0 0 2px var(--player-color), 0 0 12px rgba(var(--player-color-rgb), 0.45);
+        }
+
+        .player-ambient-blob {
+            background-color: rgba(var(--player-color-rgb), 0.1);
+        }
+
+        /* Flash-mode toggle: when checked, the track fills with the player color. */
+        .peer:checked ~ .flash-toggle-track {
+            background-color: var(--player-color);
+        }
     </style>
 </head>
-<body class="min-h-screen flex flex-col antialiased selection:bg-violet-500/30 selection:text-violet-200">
+<body class="min-h-screen flex flex-col antialiased">
 
     <!-- Ambient Grid Background decoration -->
     <div class="fixed inset-0 pointer-events-none grid-bg z-0"></div>
@@ -91,7 +136,7 @@
     <header class="border-b border-gray-900 bg-gray-950/80 backdrop-blur-md sticky top-0 z-50">
         <div class="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
             <div class="flex items-center gap-3">
-                <div class="h-10 w-10 rounded-xl bg-gradient-to-tr from-violet-600 via-fuchsia-600 to-cyan-500 p-0.5 shadow-neon-violet flex items-center justify-center">
+                <div class="h-10 w-10 rounded-xl p-0.5 player-glow flex items-center justify-center" style="background: linear-gradient(to top right, var(--player-color) 0%, #d946ef 50%, #06b6d4 100%);">
                     <div class="w-full h-full bg-gray-950 rounded-[10px] flex items-center justify-center">
                         <i data-lucide="keyboard" class="w-5 h-5 text-cyan-400"></i>
                     </div>
@@ -122,8 +167,8 @@
         
         <!-- ================= LOBBY SETUP SCREEN ================= -->
         <section id="screen-lobby" class="w-full max-w-xl mx-auto bg-gray-950/80 border border-gray-900 rounded-2xl p-6 md:p-8 shadow-2xl relative">
-            <div class="absolute -top-12 -left-12 w-48 h-48 bg-violet-600/10 rounded-full blur-3xl pointer-events-none"></div>
-            <div class="absolute -bottom-12 -right-12 w-48 h-48 bg-cyan-600/10 rounded-full blur-3xl pointer-events-none"></div>
+            <div class="absolute -top-12 -left-12 w-48 h-48 player-ambient-blob rounded-full blur-3xl pointer-events-none"></div>
+            <div class="absolute -bottom-12 -right-12 w-48 h-48 player-ambient-blob rounded-full blur-3xl pointer-events-none"></div>
 
             <div class="text-center mb-6">
                 <h2 class="text-2xl font-bold text-white mb-2">Configure Profile</h2>
@@ -139,7 +184,7 @@
                             <i data-lucide="user" class="text-gray-500 w-4 h-4"></i>
                         </div>
                         <input id="player-nickname" type="text" maxlength="15" placeholder="Speedster_99" 
-                               class="w-full bg-gray-900/60 border border-gray-800 rounded-xl py-3 pl-10 pr-4 text-white placeholder-gray-600 focus:outline-none focus:border-violet-500 transition-colors focus:shadow-neon-violet font-semibold text-sm">
+                               class="w-full bg-gray-900/60 border border-gray-800 rounded-xl py-3 pl-10 pr-4 text-white placeholder-gray-600 player-focus focus:outline-none transition-colors font-semibold text-sm">
                     </div>
                 </div>
 
@@ -183,7 +228,7 @@
                         </div>
                         <label class="relative inline-flex items-center cursor-pointer">
                             <input type="checkbox" id="config-flash-mode" class="sr-only peer">
-                            <div class="w-9 h-5 bg-gray-850 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-gray-400 after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-violet-600 peer-checked:after:bg-white"></div>
+                            <div class="w-9 h-5 bg-gray-850 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-gray-400 after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all flash-toggle-track peer-checked:after:bg-white"></div>
                         </label>
                     </div>
                 </div>
@@ -341,7 +386,7 @@
         <section id="screen-game-arena" class="hidden w-full max-w-4xl mx-auto space-y-6">
             
             <!-- Real-time Progress Tracking Race Track -->
-            <div class="bg-gray-950/90 border border-gray-900 rounded-2xl p-6 shadow-xl relative overflow-hidden">
+            <div class="bg-gray-950/90 border border-gray-900 rounded-2xl p-6 shadow-xl relative overflow-hidden player-ring-soft">
                 <div class="absolute inset-0 bg-gradient-to-b from-transparent to-violet-950/5 pointer-events-none"></div>
                 <div class="flex items-center justify-between mb-4">
                     <span class="text-xs font-bold uppercase font-mono tracking-wider text-gray-400 flex items-center gap-1.5">
@@ -366,7 +411,7 @@
                 
                 <!-- Countdown Overlay -->
                 <div id="countdown-overlay" class="hidden absolute inset-0 bg-gray-950/95 rounded-2xl z-20 flex flex-col items-center justify-center gap-3 backdrop-blur-sm transition-all duration-300">
-                    <span id="countdown-timer-num" class="text-8xl font-black font-mono bg-gradient-to-tr from-violet-400 via-fuchsia-400 to-cyan-400 bg-clip-text text-transparent transform scale-50 transition-all duration-300">3</span>
+                    <span id="countdown-timer-num" class="text-8xl font-black font-mono bg-clip-text text-transparent transform scale-50 transition-all duration-300" style="background-image: linear-gradient(to top right, var(--player-color), #e879f9, #22d3ee);">3</span>
                     <span class="text-xs font-semibold tracking-widest text-gray-400 uppercase font-mono">Position your hands...</span>
                 </div>
 
@@ -408,7 +453,7 @@
                 <div class="relative">
                     <textarea id="game-typing-input" rows="2" autocomplete="off" autofocus placeholder="First keypress starts the match timer..." 
                               autocorrect="off" autocapitalize="none" spellcheck="false"
-                              class="w-full bg-gray-900/80 border border-gray-800 focus:border-violet-500 rounded-xl py-3.5 px-4 text-white font-mono text-lg placeholder-gray-600 focus:outline-none focus:ring-1 focus:ring-violet-500 focus:shadow-neon-violet transition-all duration-200 resize-none whitespace-pre-wrap break-words overflow-wrap-anywhere"></textarea>
+                              class="w-full bg-gray-900/80 border border-gray-800 player-focus focus:outline-none rounded-xl py-3.5 px-4 text-white font-mono text-lg placeholder-gray-600 transition-all duration-200 resize-none whitespace-pre-wrap break-words overflow-wrap-anywhere"></textarea>
                     
                     <div class="absolute right-4 bottom-4 flex items-center gap-1.5 pointer-events-none opacity-60">
                         <span class="text-[9px] bg-gray-950 text-gray-400 px-2 py-0.5 rounded border border-gray-800 font-mono">IME SAFE</span>
@@ -564,12 +609,12 @@
         };
 
         const AVATAR_COLORS = [
-            { name: "Neon Violet", class: "bg-violet-600 shadow-neon-violet text-violet-200", hex: "#8b5cf6" },
-            { name: "Neon Cyan", class: "bg-cyan-500 shadow-neon-cyan text-cyan-200", hex: "#06b6d4" },
-            { name: "Neon Rose", class: "bg-rose-500 shadow-neon-rose text-rose-200", hex: "#f43f5e" },
-            { name: "Emerald Glint", class: "bg-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.5)] text-emerald-100", hex: "#10b981" },
-            { name: "Amber Sparks", class: "bg-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.5)] text-amber-100", hex: "#f59e0b" },
-            { name: "Electric Orange", class: "bg-orange-500 shadow-[0_0_15px_rgba(249,115,22,0.5)] text-orange-100", hex: "#f97316" }
+            { name: "Neon Violet",     class: "bg-violet-600 shadow-neon-violet text-violet-200",                       hex: "#8b5cf6", rgb: "139, 92, 246" },
+            { name: "Neon Cyan",       class: "bg-cyan-500 shadow-neon-cyan text-cyan-200",                             hex: "#06b6d4", rgb: "6, 182, 212" },
+            { name: "Neon Rose",       class: "bg-rose-500 shadow-neon-rose text-rose-200",                             hex: "#f43f5e", rgb: "244, 63, 94" },
+            { name: "Emerald Glint",   class: "bg-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.5)] text-emerald-100", hex: "#10b981", rgb: "16, 185, 129" },
+            { name: "Amber Sparks",    class: "bg-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.5)] text-amber-100",     hex: "#f59e0b", rgb: "245, 158, 11" },
+            { name: "Electric Orange", class: "bg-orange-500 shadow-[0_0_15px_rgba(249,115,22,0.5)] text-orange-100",   hex: "#f97316", rgb: "249, 115, 22" }
         ];
 
         // Web Audio Synthesizer (Zero asset dependency)
@@ -817,10 +862,22 @@
         };
 
         // Application initializations
+        function applyPlayerTheme() {
+            // Push the player's chosen avatar color into CSS variables consumed
+            // by .player-focus, .player-glow, .player-ring-soft, .char-current,
+            // .player-ambient-blob, the brand-logo gradient, the countdown
+            // gradient, and the flash-toggle track. Surfaces that use these
+            // classes re-skin instantly whenever the player picks a new color.
+            const col = AVATAR_COLORS[State.avatarColorIdx] || AVATAR_COLORS[0];
+            document.documentElement.style.setProperty('--player-color', col.hex);
+            document.documentElement.style.setProperty('--player-color-rgb', col.rgb);
+        }
+
         function initApp() {
             if (!State.nickname) {
                 State.nickname = `Clasher_${Math.floor(1000 + Math.random() * 9000)}`;
             }
+            applyPlayerTheme();
             DOM.playerNickname.value = State.nickname;
 
             // Render Avatar Colors Selection Panel
@@ -828,7 +885,7 @@
             AVATAR_COLORS.forEach((color, idx) => {
                 const btn = document.createElement('button');
                 btn.type = 'button';
-                btn.className = `h-10 rounded-xl transition-all relative border-2 ${color.class} ${State.avatarColorIdx === idx ? 'border-white scale-105 ring-2 ring-violet-500/30' : 'border-transparent opacity-80 hover:opacity-100 hover:scale-102'}`;
+                btn.className = `h-10 rounded-xl transition-all relative border-2 ${color.class} ${State.avatarColorIdx === idx ? 'border-white scale-105 player-ring-swatch' : 'border-transparent opacity-80 hover:opacity-100 hover:scale-102'}`;
                 btn.title = color.name;
                 btn.onclick = () => selectAvatarColor(idx);
                 
