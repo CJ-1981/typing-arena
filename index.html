@@ -182,12 +182,153 @@
             background-color: rgba(var(--player-color-rgb), 0.08);
             border: 1px solid rgba(var(--player-color-rgb), 0.25);
         }
+
+        /* === F1: PRESS START idle screen === */
+        #press-start-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 100;
+            background-color: #030712;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 1rem;
+            cursor: pointer;
+            transition: opacity 280ms ease;
+        }
+        #press-start-overlay.is-dismissed {
+            opacity: 0;
+            pointer-events: none;
+        }
+        #press-start-overlay .ps-title {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: clamp(2rem, 6vw, 4rem);
+            font-weight: 800;
+            letter-spacing: -0.02em;
+            background: linear-gradient(to top right, var(--player-color), #e879f9, #22d3ee);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            text-align: center;
+            line-height: 1;
+        }
+        #press-start-overlay .ps-subtitle {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.7rem;
+            color: #6b7280;
+            letter-spacing: 0.3em;
+            text-transform: uppercase;
+        }
+        #press-start-overlay .ps-blink {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1rem;
+            font-weight: 700;
+            color: #f3f4f6;
+            letter-spacing: 0.25em;
+            text-transform: uppercase;
+            animation: psBlink 1s steps(2, end) infinite;
+            margin-top: 0.5rem;
+        }
+        @keyframes psBlink {
+            0%, 50% { opacity: 1; }
+            50.01%, 100% { opacity: 0; }
+        }
+        #press-start-overlay .ps-coin {
+            font-size: 2rem;
+            filter: drop-shadow(0 0 12px rgba(var(--player-color-rgb), 0.6));
+        }
+
+        /* === F4: Combo big-text overlay === */
+        #combo-overlay {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            pointer-events: none;
+            z-index: 15;
+            opacity: 0;
+        }
+        #combo-overlay.is-visible {
+            animation: comboPop 900ms ease-out forwards;
+        }
+        #combo-overlay .combo-text {
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 900;
+            font-size: clamp(1.6rem, 4.5vw, 3.2rem);
+            letter-spacing: -0.01em;
+            text-align: center;
+            color: var(--player-color);
+            text-shadow:
+                0 0 12px rgba(var(--player-color-rgb), 0.65),
+                0 0 32px rgba(var(--player-color-rgb), 0.35);
+            transform: scale(0.4);
+        }
+        @keyframes comboPop {
+            0%   { opacity: 0; transform: scale(0.4); }
+            15%  { opacity: 1; transform: scale(1.15); }
+            30%  { transform: scale(1); }
+            75%  { opacity: 1; transform: scale(1); }
+            100% { opacity: 0; transform: scale(1.05) translateY(-12px); }
+        }
+
+        /* === F5: Star rating === */
+        .star-rating {
+            display: inline-flex;
+            gap: 0.25rem;
+            font-size: 1.5rem;
+            line-height: 1;
+            filter: drop-shadow(0 0 6px rgba(245, 158, 11, 0.45));
+        }
+        .star-rating .star { color: #374151; transition: color 200ms ease, transform 200ms ease; }
+        .star-rating .star.is-earned { color: #f59e0b; transform: scale(1.1); }
+        .star-rating .star.is-earned.delay-1 { animation: starPop 400ms ease-out 100ms backwards; }
+        .star-rating .star.is-earned.delay-2 { animation: starPop 400ms ease-out 250ms backwards; }
+        .star-rating .star.is-earned.delay-3 { animation: starPop 400ms ease-out 400ms backwards; }
+        @keyframes starPop {
+            0%   { transform: scale(0.2) rotate(-25deg); opacity: 0; }
+            60%  { transform: scale(1.35) rotate(8deg); opacity: 1; }
+            100% { transform: scale(1.1) rotate(0deg); opacity: 1; }
+        }
+
+        /* === F6: Floating +WPM popups === */
+        #floating-popups {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            overflow: hidden;
+            z-index: 12;
+        }
+        .float-pop {
+            position: absolute;
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 800;
+            font-size: 0.85rem;
+            color: var(--player-color);
+            text-shadow: 0 0 8px rgba(var(--player-color-rgb), 0.6);
+            animation: floatUp 850ms ease-out forwards;
+            white-space: nowrap;
+        }
+        @keyframes floatUp {
+            0%   { opacity: 0; transform: translateY(8px) scale(0.85); }
+            20%  { opacity: 1; transform: translateY(-2px) scale(1.1); }
+            100% { opacity: 0; transform: translateY(-38px) scale(1); }
+        }
     </style>
 </head>
 <body class="min-h-screen flex flex-col antialiased">
 
     <!-- Ambient Grid Background decoration -->
     <div class="fixed inset-0 pointer-events-none grid-bg z-0"></div>
+
+    <!-- F1: PRESS START idle screen (shown on first page load, dismissed by click/key) -->
+    <div id="press-start-overlay">
+        <div class="ps-coin">🪙</div>
+        <div class="ps-title">TypeClash</div>
+        <div class="ps-subtitle">P2P Typing Arena</div>
+        <div class="ps-blink">▶ Press Start</div>
+    </div>
 
     <!-- MAIN NAV HEADER -->
     <header class="border-b border-gray-900 bg-gray-950/80 backdrop-blur-md sticky top-0 z-50">
@@ -489,6 +630,12 @@
                     <span class="text-xs font-semibold tracking-widest text-gray-400 uppercase font-mono">Position your hands...</span>
                 </div>
 
+                <!-- F4: Combo big-text overlay (centered, pointer-events:none) -->
+                <div id="combo-overlay"><div class="combo-text"></div></div>
+
+                <!-- F6: Floating +WPM popups container -->
+                <div id="floating-popups"></div>
+
                 <!-- Live HUD -->
                 <div class="grid grid-cols-4 gap-4 bg-gray-900/30 p-3.5 rounded-xl border border-gray-900/80 font-mono">
                     <div class="text-center">
@@ -551,6 +698,12 @@
                 
                 <div class="text-center mb-6">
                     <span class="text-xs font-mono font-bold bg-emerald-500/10 text-emerald-400 px-2.5 py-1 rounded-full border border-emerald-500/20 uppercase tracking-wider">Battle Complete</span>
+                    <!-- F5: Star rating (filled by JS based on accuracy + WPM) -->
+                    <div id="star-rating" class="star-rating mt-3" aria-label="Match rating">
+                        <span class="star">★</span>
+                        <span class="star">★</span>
+                        <span class="star">★</span>
+                    </div>
                     <h2 class="text-3xl font-extrabold text-white mt-3">Match Performance Diagnostics</h2>
                     <p class="text-gray-400 text-xs mt-1">Direct WebRTC network rankings report.</p>
                 </div>
@@ -759,6 +912,30 @@
             playError() { this.playOsc(120, 'sawtooth', 0.12, 0.18); },
             playCountdown() { this.playOsc(400, 'triangle', 0.1, 0.2); },
             playStart() { this.playOsc(800, 'sine', 0.25, 0.25); },
+            // F2: Countdown beep ladder. Low -> mid -> high for 3/2/1, bright GO chord on 0.
+            playCountdownBeep(step) {
+                // step: 3 -> 220Hz, 2 -> 330Hz, 1 -> 440Hz, 0 -> 660Hz (GO)
+                const freqs = { 3: 220, 2: 330, 1: 440, 0: 660 };
+                const f = freqs[step] || 440;
+                this.playOsc(f, 'square', step === 0 ? 0.22 : 0.09, 0.16);
+                if (step === 0) {
+                    // GO chord: add a perfect-fifth layer
+                    this.playOsc(f * 1.5, 'square', 0.22, 0.10);
+                }
+            },
+            // F3: Combo chime ladder. Called every 10 correct chars in a row.
+            // `ladder` is 1-indexed (1 = first 10-combo, 2 = 20, etc.). Pitch climbs
+            // up a pentatonic scale and caps at the top, where it stays bright.
+            playComboChime(ladder) {
+                if (!this.enabled) return;
+                // C major pentatonic over two octaves.
+                const scale = [523.25, 587.33, 659.25, 783.99, 880.00, 1046.50, 1174.66, 1318.51, 1567.98, 1760.00];
+                const idx = Math.min(scale.length - 1, ladder - 1);
+                const base = scale[idx];
+                // Two-note bell: root + octave
+                this.playOsc(base, 'sine', 0.18, 0.14);
+                setTimeout(() => this.playOsc(base * 2, 'sine', 0.14, 0.08), 70);
+            },
             playChime() {
                 if (!this.enabled || !this.ctx) return;
                 const now = this.ctx.currentTime;
@@ -894,7 +1071,10 @@
                 progress: 0,
                 finished: false,
                 rank: null,
-                timeSpent: 0
+                timeSpent: 0,
+                combo: 0,           // F3: current consecutive-correct streak
+                bestCombo: 0,       // F3: highest combo reached this match
+                lastWpm: 0          // F6: WPM at previous keystroke (for +N popups)
             },
             leaderboard: []
         };
@@ -934,6 +1114,11 @@
             raceTracksContainer: document.getElementById('race-tracks-container'),
             countdownOverlay: document.getElementById('countdown-overlay'),
             countdownTimerNum: document.getElementById('countdown-timer-num'),
+            comboOverlay: document.getElementById('combo-overlay'),
+            comboOverlayText: document.querySelector('#combo-overlay .combo-text'),
+            floatingPopups: document.getElementById('floating-popups'),
+            starRating: document.getElementById('star-rating'),
+            pressStartOverlay: document.getElementById('press-start-overlay'),
             gameDifficultyBadge: document.getElementById('game-difficulty-badge'),
             flashBadgeIndicator: document.getElementById('flash-badge-indicator'),
             
@@ -1658,7 +1843,10 @@
                 progress: 0,
                 finished: false,
                 rank: null,
-                timeSpent: 0
+                timeSpent: 0,
+                combo: 0,
+                bestCombo: 0,
+                lastWpm: 0
             };
 
             // Re-bind textarea length limit parameters dynamically
@@ -1684,23 +1872,31 @@
             DOM.countdownOverlay.classList.remove('hidden');
             let count = 3;
             DOM.countdownTimerNum.textContent = count;
-            DOM.countdownTimerNum.className = "text-8xl font-black font-mono bg-gradient-to-tr from-violet-400 via-fuchsia-400 to-cyan-400 bg-clip-text text-transparent transform scale-50 transition-all duration-300";
+            DOM.countdownTimerNum.className = "text-8xl font-black font-mono bg-clip-text text-transparent transform scale-50 transition-all duration-300";
+            DOM.countdownTimerNum.style.backgroundImage = "linear-gradient(to top right, var(--player-color), #e879f9, #22d3ee)";
             
             setTimeout(() => {
-                DOM.countdownTimerNum.className = "text-8xl font-black font-mono bg-gradient-to-tr from-violet-400 via-fuchsia-400 to-cyan-400 bg-clip-text text-transparent transform scale-100 transition-all duration-300";
+                DOM.countdownTimerNum.className = "text-8xl font-black font-mono bg-clip-text text-transparent transform scale-100 transition-all duration-300";
             }, 10);
 
-            AudioFX.playCountdown();
+            // F2: 3-2-1-GO beep ladder.
+            AudioFX.playCountdownBeep(3);
 
             const interval = setInterval(() => {
                 count--;
                 if (count > 0) {
                     DOM.countdownTimerNum.textContent = count;
-                    AudioFX.playCountdown();
+                    AudioFX.playCountdownBeep(count);
                 } else {
+                    // GO!
+                    DOM.countdownTimerNum.textContent = "GO!";
+                    DOM.countdownTimerNum.style.backgroundImage = "linear-gradient(to top right, #10b981, #22d3ee, #8b5cf6)";
+                    AudioFX.playCountdownBeep(0);
                     clearInterval(interval);
-                    DOM.countdownOverlay.classList.add('hidden');
-                    onComplete();
+                    setTimeout(() => {
+                        DOM.countdownOverlay.classList.add('hidden');
+                        onComplete();
+                    }, 380);
                 }
             }, 1000);
         }
@@ -1851,12 +2047,98 @@
 
             renderTargetDisplayString(raw);
 
+            // F3 + F4 + F6: Combo tracking, big-text overlays, floating WPM popups.
+            // Only fire when the latest char was a correct, committed char (not 'current'
+            // which is the in-progress Hangul composition state, and not 'incorrect').
+            const lastIdx = raw.length - 1;
+            if (lastIdx >= 0 && states[lastIdx] === 'correct') {
+                State.localStats.combo += 1;
+                if (State.localStats.combo > State.localStats.bestCombo) {
+                    State.localStats.bestCombo = State.localStats.combo;
+                }
+                // F3: chime every 10 combo
+                if (State.localStats.combo > 0 && State.localStats.combo % 10 === 0) {
+                    const ladder = Math.floor(State.localStats.combo / 10);
+                    AudioFX.playComboChime(ladder);
+                    // F4: big-text overlay at milestones
+                    showComboOverlay(ladder);
+                }
+                // F6: floating +WPM popup if WPM went up since last keystroke
+                const wpmDelta = State.localStats.wpm - State.localStats.lastWpm;
+                if (wpmDelta > 0) {
+                    spawnFloatingPopup(`+${wpmDelta}`);
+                }
+            } else if (lastIdx >= 0 && states[lastIdx] === 'incorrect') {
+                // Reset combo on error.
+                State.localStats.combo = 0;
+            }
+            State.localStats.lastWpm = State.localStats.wpm;
+
             // Safe Completion Rules: Input matches target length AND composition of last char is finished
             const lastState = states[target.length - 1];
             const isLastCommitted = (lastState === 'correct' || lastState === 'incorrect');
             if (raw.length >= target.length && isLastCommitted && !State.localStats.finished) {
                 handleLocalPlayerCompletion();
             }
+        }
+
+        // F4: Show the combo big-text overlay. `ladder` is 1-indexed (1 = 10 combo).
+        // Tier labels escalate for arcade flair.
+        function showComboOverlay(ladder) {
+            const tiers = [
+                { text: 'COMBO x10!',  threshold: 1 },
+                { text: 'PERFECT!',     threshold: 2 },
+                { text: 'ON FIRE!',     threshold: 3 },
+                { text: 'UNSTOPPABLE!', threshold: 4 },
+                { text: 'GODLIKE!',     threshold: 5 }
+            ];
+            const tier = tiers[Math.min(tiers.length - 1, ladder - 1)];
+            DOM.comboOverlayText.textContent = ladder >= tiers.length
+                ? `${tier.text} x${ladder * 10}`
+                : tier.text;
+            // Force animation restart by toggling the class.
+            DOM.comboOverlay.classList.remove('is-visible');
+            void DOM.comboOverlay.offsetWidth; // reflow
+            DOM.comboOverlay.classList.add('is-visible');
+        }
+
+        // F6: Spawn a floating popup near the typing caret area. The popup
+        // appears at a randomized x within the central 60% of the typing
+        // card and floats up + fades out via the CSS animation.
+        function spawnFloatingPopup(text) {
+            const pop = document.createElement('div');
+            pop.className = 'float-pop';
+            pop.textContent = text;
+            // Randomize horizontal position in the middle band of the typing card.
+            const xPct = 30 + Math.random() * 40; // 30% .. 70%
+            const yPct = 35 + Math.random() * 20; // 35% .. 55%
+            pop.style.left = `${xPct}%`;
+            pop.style.top  = `${yPct}%`;
+            DOM.floatingPopups.appendChild(pop);
+            // Clean up after the animation finishes.
+            setTimeout(() => pop.remove(), 900);
+        }
+
+        // F5: Compute and render the star rating for the local player's run.
+        // 1 star: finished the match. 2 stars: >= 90% accuracy. 3 stars: >= 90%
+        // accuracy AND >= 40 WPM. (Solo-friendly thresholds; multiplayer
+        // uses the same logic on the local player's stats.)
+        function renderStarRating() {
+            const acc = State.localStats.accuracy;
+            const wpm = State.localStats.wpm;
+            const finished = State.localStats.finished || State.gameMode === 'MULTIPLAYER';
+            let earned = 0;
+            if (finished) earned = 1;
+            if (finished && acc >= 90) earned = 2;
+            if (finished && acc >= 90 && wpm >= 40) earned = 3;
+            const stars = DOM.starRating.querySelectorAll('.star');
+            stars.forEach((s, i) => {
+                s.classList.remove('is-earned', 'delay-1', 'delay-2', 'delay-3');
+                if (i < earned) {
+                    s.classList.add('is-earned');
+                    s.classList.add(`delay-${i + 1}`);
+                }
+            });
         }
 
         // Typing inputs triggers
@@ -2120,6 +2402,9 @@
             updateLocalLeaderboardArray();
             switchScreen('screen-game-results');
 
+            // F5: render star rating for the local player's run.
+            renderStarRating();
+
             DOM.podiumContainer.innerHTML = '';
             const myCol = AVATAR_COLORS[State.avatarColorIdx];
             const myEmoji = getAvatarEmoji();
@@ -2261,7 +2546,41 @@
 
         window.onload = function() {
             initApp();
+            setupPressStart();
         };
+
+        // F1: PRESS START idle screen.
+        // Dismissed by click, Enter, or Space. Plays the coin-insert sound
+        // and locks the AudioContext into a running state (required by browser
+        // autoplay policies — the synth only works after a user gesture).
+        function setupPressStart() {
+            const overlay = DOM.pressStartOverlay;
+            if (!overlay) return;
+            let dismissed = false;
+            const dismiss = () => {
+                if (dismissed) return;
+                dismissed = true;
+                overlay.classList.add('is-dismissed');
+                // Make sure the AudioContext is resumed (browser autoplay policy).
+                if (AudioFX.ctx && AudioFX.ctx.state === 'suspended') {
+                    AudioFX.ctx.resume();
+                }
+                AudioFX.playStart();
+                setTimeout(() => overlay.remove(), 320);
+            };
+            overlay.addEventListener('click', dismiss);
+            // Listen for Enter / Space anywhere on the page while the overlay is up.
+            const keyHandler = (e) => {
+                if (dismissed) return;
+                if (e.key === 'Enter' || e.key === ' ' || e.key === 'Spacebar') {
+                    e.preventDefault();
+                    dismiss();
+                }
+            };
+            window.addEventListener('keydown', keyHandler, { once: false });
+            // Safety: also dismiss on ANY first keydown (arcade cabinets accept any button).
+            window.addEventListener('keydown', () => { if (!dismissed) dismiss(); }, { once: true });
+        }
 
     </script>
 </body>
