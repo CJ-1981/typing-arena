@@ -463,12 +463,204 @@
             35%  { transform: scale(1); }
             100% { opacity: 1; transform: scale(1); }
         }
+
+        /* === F1: Confetti canvas overlay === */
+        #confetti-canvas {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 90;
+        }
+
+        /* === F5: Combo multiplier badge (live HUD) === */
+        .multiplier-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0.15rem 0.5rem;
+            border-radius: 0.4rem;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.65rem;
+            font-weight: 800;
+            letter-spacing: 0.05em;
+            line-height: 1.2;
+            background-color: rgba(var(--player-color-rgb), 0.12);
+            border: 1px solid rgba(var(--player-color-rgb), 0.3);
+            color: var(--player-color);
+            white-space: nowrap;
+            transition: transform 200ms ease, background-color 200ms ease;
+        }
+        .multiplier-badge.tier-2 { background-color: rgba(245, 158, 11, 0.18); border-color: rgba(245, 158, 11, 0.4); color: #f59e0b; }
+        .multiplier-badge.tier-3 { background-color: rgba(239, 68, 68, 0.18);  border-color: rgba(239, 68, 68, 0.4);  color: #ef4444; }
+        .multiplier-badge.tier-4 { background-color: rgba(168, 85, 247, 0.22); border-color: rgba(168, 85, 247, 0.5); color: #d8b4fe; }
+        .multiplier-badge.pulse  { animation: mpulse 300ms ease-out; }
+        @keyframes mpulse {
+            0%   { transform: scale(1); }
+            50%  { transform: scale(1.25); }
+            100% { transform: scale(1); }
+        }
+
+        /* === F3: Achievement toast === */
+        #achievement-toast-container {
+            position: fixed;
+            top: 1rem;
+            right: 1rem;
+            z-index: 95;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            pointer-events: none;
+            max-width: 320px;
+        }
+        .achievement-toast {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem 1rem;
+            background: linear-gradient(135deg, rgba(245, 158, 11, 0.18), rgba(139, 92, 246, 0.18));
+            border: 1px solid rgba(245, 158, 11, 0.5);
+            border-radius: 0.6rem;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4), 0 0 12px rgba(245, 158, 11, 0.25);
+            animation: achSlideIn 400ms ease-out, achSlideOut 400ms ease-in 4s forwards;
+        }
+        .achievement-toast .ach-icon { font-size: 1.5rem; line-height: 1; flex-shrink: 0; }
+        .achievement-toast .ach-body { display: flex; flex-direction: column; gap: 0.1rem; min-width: 0; }
+        .achievement-toast .ach-label {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.55rem;
+            font-weight: 800;
+            color: #f59e0b;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+        }
+        .achievement-toast .ach-name { font-size: 0.8rem; font-weight: 700; color: #ffffff; line-height: 1.2; }
+        .achievement-toast .ach-desc { font-size: 0.65rem; color: #d1d5db; line-height: 1.2; }
+        @keyframes achSlideIn {
+            0%   { opacity: 0; transform: translateX(40px); }
+            100% { opacity: 1; transform: translateX(0); }
+        }
+        @keyframes achSlideOut {
+            0%   { opacity: 1; transform: translateX(0); }
+            100% { opacity: 0; transform: translateX(40px); }
+        }
+
+        /* === F2: High scores + achievements screen === */
+        .hs-tabs {
+            display: flex;
+            gap: 0.5rem;
+            justify-content: center;
+            margin-bottom: 1rem;
+        }
+        .hs-tab {
+            padding: 0.4rem 1rem;
+            border-radius: 0.5rem;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.7rem;
+            font-weight: 700;
+            color: #9ca3af;
+            background-color: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            cursor: pointer;
+            transition: all 150ms ease;
+        }
+        .hs-tab.is-active {
+            color: var(--player-color);
+            background-color: rgba(var(--player-color-rgb), 0.12);
+            border-color: rgba(var(--player-color-rgb), 0.35);
+        }
+        .hs-table { width: 100%; border-collapse: collapse; font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; }
+        .hs-table th { padding: 0.5rem; text-align: left; color: #6b7280; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 1px solid #1f2937; }
+        .hs-table td { padding: 0.5rem; color: #d1d5db; border-bottom: 1px solid #111827; }
+        .hs-table tr.hs-new-best { background-color: rgba(16, 185, 129, 0.08); }
+        .hs-table tr.hs-new-best td { color: #10b981; font-weight: 700; }
+        .hs-empty { text-align: center; padding: 2rem; color: #4b5563; font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; }
+
+        /* === F3: Achievements grid === */
+        .achievements-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: 0.6rem;
+        }
+        .ach-card {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            gap: 0.35rem;
+            padding: 0.85rem 0.5rem;
+            border-radius: 0.6rem;
+            background-color: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            opacity: 0.4;
+            transition: opacity 200ms ease, border-color 200ms ease, background-color 200ms ease;
+        }
+        .ach-card.is-unlocked {
+            opacity: 1;
+            background-color: rgba(245, 158, 11, 0.08);
+            border-color: rgba(245, 158, 11, 0.3);
+        }
+        .ach-card .ach-card-icon { font-size: 1.8rem; line-height: 1; }
+        .ach-card .ach-card-name { font-size: 0.7rem; font-weight: 700; color: #e5e7eb; line-height: 1.2; }
+        .ach-card .ach-card-desc { font-size: 0.55rem; color: #6b7280; line-height: 1.2; }
+        .ach-card.is-unlocked .ach-card-name { color: #f59e0b; }
+
+        /* === F4: WPM curve chart === */
+        #wpm-chart-canvas {
+            width: 100%;
+            height: 120px;
+            display: block;
+        }
+        .wpm-chart-wrapper {
+            background-color: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 0.6rem;
+            padding: 0.75rem;
+            margin-top: 0.75rem;
+        }
+        .wpm-chart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.65rem;
+            color: #9ca3af;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+        }
+        .new-best-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+            padding: 0.25rem 0.6rem;
+            border-radius: 0.4rem;
+            background-color: rgba(16, 185, 129, 0.15);
+            border: 1px solid rgba(16, 185, 129, 0.4);
+            color: #10b981;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.6rem;
+            font-weight: 800;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            animation: newBestPop 600ms ease-out;
+        }
+        @keyframes newBestPop {
+            0%   { opacity: 0; transform: scale(0.5); }
+            60%  { opacity: 1; transform: scale(1.15); }
+            100% { opacity: 1; transform: scale(1); }
+        }
     </style>
 </head>
 <body class="min-h-screen flex flex-col antialiased">
 
     <!-- Ambient Grid Background decoration -->
     <div class="fixed inset-0 pointer-events-none grid-bg z-0"></div>
+
+    <!-- F1: Confetti canvas overlay (fixed, pointer-events-none) -->
+    <canvas id="confetti-canvas" class="hidden"></canvas>
+
+    <!-- F3: Achievement toast container (top-right) -->
+    <div id="achievement-toast-container"></div>
 
     <!-- F1: PRESS START idle screen (shown on first page load, dismissed by click/key) -->
     <div id="press-start-overlay">
@@ -620,6 +812,17 @@
                         <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-950/40 text-emerald-400 border border-emerald-500/20 flex items-center gap-1">
                             <span>Practice</span>
                             <kbd class="hidden sm:inline-block px-1 bg-emerald-900/60 rounded text-[9px]">Shift+Enter</kbd>
+                        </span>
+                    </button>
+
+                    <!-- F2/F3: Stats & Achievements button -->
+                    <button id="btn-show-stats" class="w-full py-2.5 px-5 rounded-xl bg-gray-900/40 hover:bg-gray-900/70 border border-gray-800 hover:border-gray-700 font-bold transition-all flex items-center justify-between text-gray-400 group">
+                        <span class="flex items-center gap-2.5 text-xs">
+                            <i data-lucide="trophy" class="w-4 h-4 text-amber-400 group-hover:scale-110 transition-transform"></i>
+                            Personal Bests & Achievements
+                        </span>
+                        <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-gray-950/60 text-gray-500 border border-gray-800 flex items-center gap-1">
+                            <span id="stats-summary">Lv 1 · 0 matches</span>
                         </span>
                     </button>
 
@@ -797,7 +1000,7 @@
                 <div id="floating-popups"></div>
 
                 <!-- Live HUD -->
-                <div class="grid grid-cols-4 gap-4 bg-gray-900/30 p-3.5 rounded-xl border border-gray-900/80 font-mono">
+                <div class="grid grid-cols-5 gap-3 bg-gray-900/30 p-3.5 rounded-xl border border-gray-900/80 font-mono">
                     <div class="text-center">
                         <span class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest">WPM</span>
                         <span id="stat-wpm" class="text-2xl font-extrabold text-cyan-400">0</span>
@@ -813,6 +1016,10 @@
                     <div class="text-center border-l border-gray-900">
                         <span class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest">Time</span>
                         <span id="stat-time" class="text-2xl font-extrabold text-rose-400">00:00</span>
+                    </div>
+                    <div class="text-center border-l border-gray-900">
+                        <span class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest">Combo</span>
+                        <span id="stat-multiplier" class="multiplier-badge mt-1">x1</span>
                     </div>
                 </div>
 
@@ -887,6 +1094,23 @@
                     <!-- Dynamic podium slots -->
                 </div>
 
+                <!-- F4: WPM curve chart -->
+                <div id="wpm-chart-wrapper" class="wpm-chart-wrapper hidden">
+                    <div class="wpm-chart-header">
+                        <span>WPM Over Time</span>
+                        <span><span id="wpm-chart-avg">0</span> avg · <span id="wpm-chart-peak">0</span> peak</span>
+                    </div>
+                    <canvas id="wpm-chart-canvas"></canvas>
+                </div>
+
+                <!-- F3: Achievements unlocked this match -->
+                <div id="match-achievements" class="hidden">
+                    <div class="text-center mb-2">
+                        <span class="text-[10px] font-mono font-bold text-amber-400 uppercase tracking-widest">Achievements Unlocked</span>
+                    </div>
+                    <div id="match-achievements-grid" class="achievements-grid"></div>
+                </div>
+
                 <!-- Summary Scores Board Table -->
                 <div class="border border-gray-900 rounded-xl overflow-hidden bg-gray-900/10 mb-6">
                     <table class="w-full text-left border-collapse font-mono text-xs">
@@ -913,6 +1137,80 @@
                     <button id="btn-results-play-again" class="flex-grow max-w-xs py-3 bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 text-white font-bold rounded-xl text-xs transition-all shadow-neon-violet flex items-center justify-center gap-1.5 font-mono">
                         <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
                         <span>REPLAY MATCH <kbd class="px-1 bg-violet-850/60 rounded text-[9px] text-violet-200">Shift+Enter</kbd></span>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= STATS & ACHIEVEMENTS SCREEN ================= -->
+        <section id="screen-stats" class="hidden w-full max-w-2xl mx-auto space-y-6">
+            <div class="bg-gray-950/80 border border-gray-900 rounded-2xl p-6 md:p-8 shadow-2xl relative">
+                <div class="text-center mb-6">
+                    <span class="text-xs font-mono font-bold bg-amber-500/10 text-amber-400 px-2.5 py-1 rounded-full border border-amber-500/20 uppercase tracking-wider">Career Stats</span>
+                    <h2 class="text-2xl font-extrabold text-white mt-3">Personal Bests & Achievements</h2>
+                    <p class="text-gray-400 text-xs mt-1">Your typing journey, saved locally on this device.</p>
+                </div>
+
+                <!-- Tabs: High Scores | Achievements -->
+                <div class="hs-tabs">
+                    <button class="hs-tab is-active" data-tab="scores">High Scores</button>
+                    <button class="hs-tab" data-tab="achievements">Achievements</button>
+                </div>
+
+                <!-- High scores panel -->
+                <div id="stats-panel-scores">
+                    <div class="mb-3">
+                        <label class="block text-[10px] text-gray-500 uppercase tracking-wider mb-1 font-mono">Language</label>
+                        <select id="hs-language-filter" class="w-full bg-gray-950 border border-gray-850 rounded-lg p-2 text-xs text-white focus:outline-none focus:border-violet-500 font-medium font-mono">
+                            <option value="en">English</option>
+                            <option value="de">Deutsch</option>
+                            <option value="ko">한국어</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="block text-[10px] text-gray-500 uppercase tracking-wider mb-1 font-mono">Difficulty</label>
+                        <select id="hs-difficulty-filter" class="w-full bg-gray-950 border border-gray-850 rounded-lg p-2 text-xs text-white focus:outline-none focus:border-violet-500 font-medium font-mono">
+                            <option value="short">Short</option>
+                            <option value="medium">Medium</option>
+                            <option value="long">Long</option>
+                        </select>
+                    </div>
+                    <div class="border border-gray-900 rounded-xl overflow-hidden bg-gray-900/10">
+                        <table class="hs-table">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>WPM</th>
+                                    <th>Acc</th>
+                                    <th>Stars</th>
+                                    <th>Date</th>
+                                </tr>
+                            </thead>
+                            <tbody id="hs-table-body">
+                                <!-- Dynamic entries -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Achievements panel -->
+                <div id="stats-panel-achievements" class="hidden">
+                    <div class="mb-3 text-center text-[10px] font-mono text-gray-500">
+                        <span id="ach-progress">0 / 0 unlocked</span>
+                    </div>
+                    <div id="achievements-grid-full" class="achievements-grid">
+                        <!-- Dynamic entries -->
+                    </div>
+                </div>
+
+                <div class="flex gap-3 justify-center mt-6">
+                    <button id="btn-stats-back" class="px-5 py-3 bg-gray-900 hover:bg-gray-850 border border-gray-800 rounded-xl font-bold text-xs text-gray-300 transition-colors flex items-center gap-1.5 font-mono">
+                        <i data-lucide="arrow-left" class="w-4 h-4"></i>
+                        <span>BACK TO LOBBY</span>
+                    </button>
+                    <button id="btn-stats-reset" class="px-5 py-3 bg-rose-950/30 hover:bg-rose-950/50 border border-rose-900/40 rounded-xl font-bold text-xs text-rose-400 transition-colors flex items-center gap-1.5 font-mono">
+                        <i data-lucide="trash-2" class="w-4 h-4"></i>
+                        <span>RESET STATS</span>
                     </button>
                 </div>
             </div>
@@ -1235,6 +1533,14 @@
             lastMatchXP: null,        // breakdown of XP earned in the just-finished match
             leveledUpThisMatch: false,
             previousLevel: 1,
+            // Career stats (persisted)
+            matchCount: parseInt(localStorage.getItem('typeclash_match_count')) || 0,
+            languagesPlayed: JSON.parse(localStorage.getItem('typeclash_languages') || '[]'),
+            achievements: JSON.parse(localStorage.getItem('typeclash_achievements') || '[]'),
+            highScores: JSON.parse(localStorage.getItem('typeclash_high_scores') || '{}'),
+            // Per-match tracking
+            lastMatchAchievements: [],  // achievement IDs unlocked this match
+            lastMatchIsNewBest: false,
             roomId: '',
             peer: null,
             connections: [],
@@ -1266,7 +1572,9 @@
                 timeSpent: 0,
                 combo: 0,           // F3: current consecutive-correct streak
                 bestCombo: 0,       // F3: highest combo reached this match
-                lastWpm: 0          // F6: WPM at previous keystroke (for +N popups)
+                bestMultiplier: 1,  // F5: best combo multiplier reached this match (1-4)
+                lastWpm: 0,         // F6: WPM at previous keystroke (for +N popups)
+                wpmHistory: []      // F4: array of {time, wpm} samples for the chart
             },
             leaderboard: []
         };
@@ -1321,6 +1629,30 @@
             floatingPopups: document.getElementById('floating-popups'),
             starRating: document.getElementById('star-rating'),
             pressStartOverlay: document.getElementById('press-start-overlay'),
+            // F1: Confetti
+            confettiCanvas: document.getElementById('confetti-canvas'),
+            // F2: High scores screen
+            screenStats: document.getElementById('screen-stats'),
+            btnShowStats: document.getElementById('btn-show-stats'),
+            btnStatsBack: document.getElementById('btn-stats-back'),
+            btnStatsReset: document.getElementById('btn-stats-reset'),
+            hsLanguageFilter: document.getElementById('hs-language-filter'),
+            hsDifficultyFilter: document.getElementById('hs-difficulty-filter'),
+            hsTableBody: document.getElementById('hs-table-body'),
+            statsSummary: document.getElementById('stats-summary'),
+            // F3: Achievements
+            achievementToastContainer: document.getElementById('achievement-toast-container'),
+            matchAchievements: document.getElementById('match-achievements'),
+            matchAchievementsGrid: document.getElementById('match-achievements-grid'),
+            achievementsGridFull: document.getElementById('achievements-grid-full'),
+            achProgress: document.getElementById('ach-progress'),
+            // F4: WPM chart
+            wpmChartWrapper: document.getElementById('wpm-chart-wrapper'),
+            wpmChartCanvas: document.getElementById('wpm-chart-canvas'),
+            wpmChartAvg: document.getElementById('wpm-chart-avg'),
+            wpmChartPeak: document.getElementById('wpm-chart-peak'),
+            // F5: Combo multiplier HUD
+            statMultiplier: document.getElementById('stat-multiplier'),
             gameDifficultyBadge: document.getElementById('game-difficulty-badge'),
             flashBadgeIndicator: document.getElementById('flash-badge-indicator'),
             
@@ -1426,6 +1758,7 @@
 
         // XP formula: rewards finishing, speed (WPM), accuracy, stars, and combo.
         // Multiplier: 1.5x for multiplayer (encourages P2P matches).
+        // F5: Combo multiplier (1-4) based on bestCombo, applied to total.
         function calculateMatchXP(stats, gameMode) {
             const base = 50;                       // finishing bonus
             const wpmBonus = stats.wpm * 2;         // 2 XP per WPM
@@ -1435,10 +1768,12 @@
             const comboBonus = stats.bestCombo || 0; // 1 XP per best-combo char
             const subtotal = base + wpmBonus + accBonus + starBonus + comboBonus;
             const multiplier = gameMode === 'MULTIPLAYER' ? 1.5 : 1.0;
+            const comboMult = stats.bestMultiplier || 1;  // F5: 1-4x from combo tiers
             return {
                 base, wpm: wpmBonus, accuracy: accBonus, stars: starBonus,
                 starsCount: stars, combo: comboBonus,
-                multiplier, total: Math.max(0, Math.round(subtotal * multiplier))
+                multiplier, comboMult,
+                total: Math.max(0, Math.round(subtotal * multiplier * comboMult))
             };
         }
 
@@ -1485,6 +1820,7 @@
                 `Combo ${xp.combo}`
             ];
             if (xp.multiplier > 1) parts.push(`×${xp.multiplier} MP`);
+            if (xp.comboMult > 1) parts.push(`×${xp.comboMult} Combo`);
             DOM.xpEarnedBreakdown.textContent = parts.join(' · ');
             DOM.xpEarnedTotal.textContent = `Total: ${State.playerXP.toLocaleString()} XP`;
 
@@ -1500,6 +1836,17 @@
                 DOM.levelUpBanner.classList.add('hidden');
                 DOM.levelUpBanner.classList.remove('is-active');
             }
+
+            // F2: Show "NEW BEST" badge if this match set a new high score
+            const existing = document.querySelector('#xp-earned-display .new-best-badge');
+            if (existing) existing.remove();
+            if (State.lastMatchIsNewBest) {
+                const badge = document.createElement('div');
+                badge.className = 'new-best-badge';
+                badge.innerHTML = '<i data-lucide="award" class="w-3 h-3"></i> NEW PERSONAL BEST';
+                DOM.xpEarnedDisplay.appendChild(badge);
+                lucide.createIcons();
+            }
         }
 
         // Build an inline level badge HTML string. Used in roster rows.
@@ -1511,6 +1858,409 @@
                 ? `background-color: rgba(${colorRgb}, 0.18); border-color: rgba(${colorRgb}, 0.35); color: rgb(${colorRgb});`
                 : '';
             return `<span class="level-badge" style="${style}">Lv ${level}</span>`;
+        }
+
+        // === F5: Combo multiplier ===
+        // Returns 1-4 based on current combo. Reset to 1 on error.
+        //   x1: combo 0-19, x2: 20-39, x3: 40-59, x4: 60+
+        function getComboMultiplier(combo) {
+            if (combo >= 60) return 4;
+            if (combo >= 40) return 3;
+            if (combo >= 20) return 2;
+            return 1;
+        }
+
+        function updateMultiplierHUD() {
+            const mult = getComboMultiplier(State.localStats.combo);
+            if (mult > State.localStats.bestMultiplier) {
+                State.localStats.bestMultiplier = mult;
+            }
+            const el = DOM.statMultiplier;
+            if (!el) return;
+            const prevTier = parseInt(el.dataset.tier || '1', 10);
+            el.textContent = `x${mult}`;
+            el.className = `multiplier-badge mt-1 tier-${mult}`;
+            el.dataset.tier = mult;
+            if (mult !== prevTier) {
+                el.classList.add('pulse');
+                setTimeout(() => el.classList.remove('pulse'), 300);
+            }
+        }
+
+        // === F1: Confetti particle system ===
+        // Emoji-based confetti using the player's avatar emoji. Spawns on
+        // match completion (solo) or 1st place (multiplayer).
+        const ConfettiFX = {
+            canvas: null,
+            ctx: null,
+            particles: [],
+            rafId: null,
+
+            init() {
+                this.canvas = DOM.confettiCanvas;
+                if (!this.canvas) return;
+                this.ctx = this.canvas.getContext('2d');
+                this.resize();
+                window.addEventListener('resize', () => this.resize());
+            },
+
+            resize() {
+                if (!this.canvas) return;
+                this.canvas.width = window.innerWidth;
+                this.canvas.height = window.innerHeight;
+                this.canvas.classList.remove('hidden');
+            },
+
+            spawn(emojiChar, count = 80) {
+                if (!this.canvas || !this.ctx) this.init();
+                if (!this.ctx) return;
+                this.resize();
+                const colors = ['#f59e0b', '#8b5cf6', '#06b6d4', '#10b981', '#f43f5e', '#f97316'];
+                for (let i = 0; i < count; i++) {
+                    this.particles.push({
+                        x: Math.random() * this.canvas.width,
+                        y: -20 - Math.random() * 100,
+                        vx: (Math.random() - 0.5) * 6,
+                        vy: 2 + Math.random() * 5,
+                        rot: Math.random() * Math.PI * 2,
+                        vrot: (Math.random() - 0.5) * 0.3,
+                        size: 14 + Math.random() * 16,
+                        char: Math.random() < 0.6 ? emojiChar : colors[Math.floor(Math.random() * colors.length)],
+                        isEmoji: Math.random() < 0.6,
+                        life: 1.0,
+                        decay: 0.003 + Math.random() * 0.004,
+                    });
+                }
+                if (!this.rafId) this.animate();
+            },
+
+            animate() {
+                if (!this.ctx || !this.canvas) return;
+                this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+                this.particles = this.particles.filter(p => p.life > 0 && p.y < this.canvas.height + 50);
+                this.particles.forEach(p => {
+                    p.x += p.vx;
+                    p.y += p.vy;
+                    p.vy += 0.12; // gravity
+                    p.vx *= 0.99; // air resistance
+                    p.rot += p.vrot;
+                    p.life -= p.decay;
+                    this.ctx.save();
+                    this.ctx.translate(p.x, p.y);
+                    this.ctx.rotate(p.rot);
+                    this.ctx.globalAlpha = Math.max(0, p.life);
+                    if (p.isEmoji) {
+                        this.ctx.font = `${p.size}px "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif`;
+                        this.ctx.textAlign = 'center';
+                        this.ctx.textBaseline = 'middle';
+                        this.ctx.fillText(p.char, 0, 0);
+                    } else {
+                        this.ctx.fillStyle = p.char;
+                        this.ctx.fillRect(-p.size / 3, -p.size / 3, p.size / 1.5, p.size / 1.5);
+                    }
+                    this.ctx.restore();
+                });
+                if (this.particles.length > 0) {
+                    this.rafId = requestAnimationFrame(() => this.animate());
+                } else {
+                    this.rafId = null;
+                    this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+                    this.canvas.classList.add('hidden');
+                }
+            }
+        };
+
+        // === F3: Achievements ===
+        // Each achievement: { id, icon, name, desc, check(ctx) -> bool }
+        // `ctx` contains: stats, gameMode, playerLevel, matchCount, languagesPlayed, bestCombo, isWinner
+        const ACHIEVEMENTS = [
+            { id: 'first_match',  icon: '🎯', name: 'First Match',     desc: 'Finish your first match' },
+            { id: 'wpm_50',       icon: '⚡', name: 'Speed Demon',      desc: 'Reach 50 WPM in a match' },
+            { id: 'wpm_80',       icon: '🚀', name: 'Speedster',        desc: 'Reach 80 WPM in a match' },
+            { id: 'wpm_100',      icon: '💯', name: '100 WPM Club',     desc: 'Reach 100 WPM in a match' },
+            { id: 'flawless',     icon: '✨', name: 'Flawless Run',     desc: 'Finish a match with 100% accuracy' },
+            { id: 'sharpshooter', icon: '🎯', name: 'Sharpshooter',     desc: 'Finish a match with 95%+ accuracy' },
+            { id: 'combo_30',     icon: '🔥', name: 'On Fire',          desc: 'Reach a 30+ combo streak' },
+            { id: 'combo_60',     icon: '🌟', name: 'Combo Master',     desc: 'Reach a 60+ combo streak' },
+            { id: 'multiplier_4', icon: '💎', name: 'Diamond Hands',    desc: 'Reach a x4 combo multiplier' },
+            { id: 'level_5',      icon: '⭐', name: 'Rising Star',      desc: 'Reach level 5' },
+            { id: 'level_10',     icon: '🏆', name: 'Typing Champion',  desc: 'Reach level 10' },
+            { id: 'level_20',     icon: '👑', name: 'Typing Legend',    desc: 'Reach level 20' },
+            { id: 'matches_10',   icon: '📚', name: 'Persistent',       desc: 'Play 10 matches' },
+            { id: 'matches_50',   icon: '📖', name: 'Dedicated',        desc: 'Play 50 matches' },
+            { id: 'polyglot',     icon: '🌍', name: 'Polyglot',         desc: 'Play matches in all 3 languages' },
+            { id: 'multiplayer_win', icon: '🥇', name: 'Champion',      desc: 'Win a multiplayer match (1st place)' },
+        ];
+
+        function checkAchievement(id, ctx) {
+            const s = ctx.stats;
+            switch (id) {
+                case 'first_match':     return ctx.matchCount >= 1;
+                case 'wpm_50':          return s.wpm >= 50;
+                case 'wpm_80':          return s.wpm >= 80;
+                case 'wpm_100':         return s.wpm >= 100;
+                case 'flawless':        return s.accuracy >= 100;
+                case 'sharpshooter':    return s.accuracy >= 95;
+                case 'combo_30':        return (s.bestCombo || 0) >= 30;
+                case 'combo_60':        return (s.bestCombo || 0) >= 60;
+                case 'multiplier_4':    return (s.bestMultiplier || 1) >= 4;
+                case 'level_5':         return ctx.playerLevel >= 5;
+                case 'level_10':        return ctx.playerLevel >= 10;
+                case 'level_20':        return ctx.playerLevel >= 20;
+                case 'matches_10':      return ctx.matchCount >= 10;
+                case 'matches_50':      return ctx.matchCount >= 50;
+                case 'polyglot':        return ctx.languagesPlayed.length >= 3;
+                case 'multiplayer_win': return ctx.isWinner === true;
+                default: return false;
+            }
+        }
+
+        function checkAndAwardAchievements(ctx) {
+            const newlyUnlocked = [];
+            ACHIEVEMENTS.forEach(ach => {
+                if (State.achievements.includes(ach.id)) return;
+                if (checkAchievement(ach.id, ctx)) {
+                    State.achievements.push(ach.id);
+                    newlyUnlocked.push(ach);
+                }
+            });
+            if (newlyUnlocked.length > 0) {
+                localStorage.setItem('typeclash_achievements', JSON.stringify(State.achievements));
+            }
+            State.lastMatchAchievements = newlyUnlocked.map(a => a.id);
+            return newlyUnlocked;
+        }
+
+        function showAchievementToast(ach) {
+            const toast = document.createElement('div');
+            toast.className = 'achievement-toast';
+            toast.innerHTML = `
+                <div class="ach-icon">${ach.icon}</div>
+                <div class="ach-body">
+                    <div class="ach-label">Achievement Unlocked</div>
+                    <div class="ach-name">${ach.name}</div>
+                    <div class="ach-desc">${ach.desc}</div>
+                </div>
+            `;
+            DOM.achievementToastContainer.appendChild(toast);
+            setTimeout(() => toast.remove(), 4500);
+        }
+
+        function renderMatchAchievements() {
+            if (!State.lastMatchAchievements || State.lastMatchAchievements.length === 0) {
+                DOM.matchAchievements.classList.add('hidden');
+                return;
+            }
+            DOM.matchAchievements.classList.remove('hidden');
+            DOM.matchAchievementsGrid.innerHTML = '';
+            State.lastMatchAchievements.forEach(id => {
+                const ach = ACHIEVEMENTS.find(a => a.id === id);
+                if (!ach) return;
+                const card = document.createElement('div');
+                card.className = 'ach-card is-unlocked';
+                card.innerHTML = `
+                    <div class="ach-card-icon">${ach.icon}</div>
+                    <div class="ach-card-name">${ach.name}</div>
+                    <div class="ach-card-desc">${ach.desc}</div>
+                `;
+                DOM.matchAchievementsGrid.appendChild(card);
+            });
+        }
+
+        function renderAchievementsGridFull() {
+            DOM.achievementsGridFull.innerHTML = '';
+            ACHIEVEMENTS.forEach(ach => {
+                const unlocked = State.achievements.includes(ach.id);
+                const card = document.createElement('div');
+                card.className = `ach-card ${unlocked ? 'is-unlocked' : ''}`;
+                card.innerHTML = `
+                    <div class="ach-card-icon">${unlocked ? ach.icon : '🔒'}</div>
+                    <div class="ach-card-name">${ach.name}</div>
+                    <div class="ach-card-desc">${ach.desc}</div>
+                `;
+                DOM.achievementsGridFull.appendChild(card);
+            });
+            DOM.achProgress.textContent = `${State.achievements.length} / ${ACHIEVEMENTS.length} unlocked`;
+        }
+
+        // === F2: High scores ===
+        function getHighScoreKey(lang, diff) {
+            return `${lang}_${diff}`;
+        }
+
+        function addHighScore(stats) {
+            const key = getHighScoreKey(State.targetLanguage, State.targetDifficulty);
+            if (!State.highScores[key]) State.highScores[key] = [];
+            const entry = {
+                wpm: stats.wpm,
+                accuracy: stats.accuracy,
+                stars: countStars(stats, State.gameMode),
+                date: new Date().toISOString(),
+                level: State.playerLevel,
+                emoji: getAvatarEmoji().char,
+            };
+            const list = State.highScores[key];
+            list.push(entry);
+            // Sort by WPM desc, keep top 10
+            list.sort((a, b) => b.wpm - a.wpm);
+            const isNewBest = list[0] === entry;
+            State.highScores[key] = list.slice(0, 10);
+            localStorage.setItem('typeclash_high_scores', JSON.stringify(State.highScores));
+            State.lastMatchIsNewBest = isNewBest;
+            return isNewBest;
+        }
+
+        function renderHighScoresTable() {
+            const lang = DOM.hsLanguageFilter.value;
+            const diff = DOM.hsDifficultyFilter.value;
+            const key = getHighScoreKey(lang, diff);
+            const list = State.highScores[key] || [];
+            DOM.hsTableBody.innerHTML = '';
+            if (list.length === 0) {
+                DOM.hsTableBody.innerHTML = `<tr><td colspan="5" class="hs-empty">No scores yet. Play a match to set your first record!</td></tr>`;
+                return;
+            }
+            list.forEach((entry, idx) => {
+                const tr = document.createElement('tr');
+                const date = new Date(entry.date);
+                const dateStr = date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+                const stars = '★'.repeat(entry.stars) + '·'.repeat(3 - entry.stars);
+                tr.innerHTML = `
+                    <td>${idx + 1}</td>
+                    <td>${entry.wpm}</td>
+                    <td>${entry.accuracy}%</td>
+                    <td style="color: #f59e0b;">${stars}</td>
+                    <td>${dateStr}</td>
+                `;
+                DOM.hsTableBody.appendChild(tr);
+            });
+        }
+
+        function updateStatsSummary() {
+            if (DOM.statsSummary) {
+                DOM.statsSummary.textContent = `Lv ${State.playerLevel} · ${State.matchCount} matches`;
+            }
+        }
+
+        // === F4: WPM curve chart ===
+        function sampleWPM() {
+            if (State.gameState !== 'PLAYING' || !State.startTime) return;
+            State.localStats.wpmHistory.push({
+                time: State.timeElapsed,
+                wpm: State.localStats.wpm,
+            });
+        }
+
+        function renderWPMChart() {
+            const history = State.localStats.wpmHistory;
+            if (!history || history.length < 2) {
+                DOM.wpmChartWrapper.classList.add('hidden');
+                return;
+            }
+            DOM.wpmChartWrapper.classList.remove('hidden');
+            const canvas = DOM.wpmChartCanvas;
+            const ctx = canvas.getContext('2d');
+            // Set canvas resolution (handle devicePixelRatio)
+            const dpr = window.devicePixelRatio || 1;
+            const rect = canvas.getBoundingClientRect();
+            canvas.width = rect.width * dpr;
+            canvas.height = 120 * dpr;
+            ctx.scale(dpr, dpr);
+            const W = rect.width;
+            const H = 120;
+            ctx.clearRect(0, 0, W, H);
+
+            const maxTime = Math.max(...history.map(p => p.time));
+            const maxWPM = Math.max(80, Math.max(...history.map(p => p.wpm)) * 1.15);
+            const padL = 32, padR = 8, padT = 8, padB = 18;
+            const plotW = W - padL - padR;
+            const plotH = H - padT - padB;
+
+            // Grid lines (horizontal)
+            ctx.strokeStyle = 'rgba(255,255,255,0.05)';
+            ctx.lineWidth = 1;
+            ctx.font = '9px "JetBrains Mono", monospace';
+            ctx.fillStyle = '#4b5563';
+            const ySteps = 3;
+            for (let i = 0; i <= ySteps; i++) {
+                const y = padT + (plotH / ySteps) * i;
+                ctx.beginPath();
+                ctx.moveTo(padL, y);
+                ctx.lineTo(W - padR, y);
+                ctx.stroke();
+                const wpmLabel = Math.round(maxWPM - (maxWPM / ySteps) * i);
+                ctx.textAlign = 'right';
+                ctx.fillText(wpmLabel, padL - 4, y + 3);
+            }
+
+            // Get player color from CSS variable
+            const playerColor = getComputedStyle(document.documentElement).getPropertyValue('--player-color').trim() || '#8b5cf6';
+
+            // Fill under curve
+            ctx.beginPath();
+            ctx.moveTo(padL, padT + plotH);
+            history.forEach((p, i) => {
+                const x = padL + (p.time / maxTime) * plotW;
+                const y = padT + plotH - (p.wpm / maxWPM) * plotH;
+                if (i === 0) ctx.lineTo(x, y);
+                else ctx.lineTo(x, y);
+            });
+            ctx.lineTo(padL + (history[history.length - 1].time / maxTime) * plotW, padT + plotH);
+            ctx.closePath();
+            const grad = ctx.createLinearGradient(0, padT, 0, padT + plotH);
+            grad.addColorStop(0, playerColor + '40');
+            grad.addColorStop(1, playerColor + '00');
+            ctx.fillStyle = grad;
+            ctx.fill();
+
+            // Line
+            ctx.beginPath();
+            ctx.strokeStyle = playerColor;
+            ctx.lineWidth = 2;
+            history.forEach((p, i) => {
+                const x = padL + (p.time / maxTime) * plotW;
+                const y = padT + plotH - (p.wpm / maxWPM) * plotH;
+                if (i === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            });
+            ctx.stroke();
+
+            // Stats
+            const wpms = history.map(p => p.wpm);
+            const avg = Math.round(wpms.reduce((a, b) => a + b, 0) / wpms.length);
+            const peak = Math.max(...wpms);
+            DOM.wpmChartAvg.textContent = avg;
+            DOM.wpmChartPeak.textContent = peak;
+        }
+
+        // === F2: Stats screen management ===
+        function showStatsScreen() {
+            // Update filters to current selection
+            DOM.hsLanguageFilter.value = State.targetLanguage;
+            DOM.hsDifficultyFilter.value = State.targetDifficulty;
+            renderHighScoresTable();
+            renderAchievementsGridFull();
+            switchScreen('screen-stats');
+        }
+
+        function resetAllStats() {
+            if (!confirm('Reset ALL stats? This will clear your XP, level, high scores, and achievements. This cannot be undone.')) return;
+            localStorage.removeItem('typeclash_xp');
+            localStorage.removeItem('typeclash_level');
+            localStorage.removeItem('typeclash_match_count');
+            localStorage.removeItem('typeclash_languages');
+            localStorage.removeItem('typeclash_achievements');
+            localStorage.removeItem('typeclash_high_scores');
+            State.playerXP = 0;
+            State.playerLevel = 1;
+            State.matchCount = 0;
+            State.languagesPlayed = [];
+            State.achievements = [];
+            State.highScores = {};
+            initApp();
+            renderHighScoresTable();
+            renderAchievementsGridFull();
+            updateStatsSummary();
         }
 
         function initApp() {
@@ -1563,6 +2313,8 @@
 
             attachEventListeners();
             AudioFX.init();
+            ConfettiFX.init();
+            updateStatsSummary();
         }
 
         function selectAvatarColor(idx) {
@@ -1586,6 +2338,23 @@
 
         function attachEventListeners() {
             DOM.playerNickname.addEventListener('input', syncNickname);
+
+            // F2/F3: Stats screen navigation
+            DOM.btnShowStats.addEventListener('click', showStatsScreen);
+            DOM.btnStatsBack.addEventListener('click', () => switchScreen('screen-lobby'));
+            DOM.btnStatsReset.addEventListener('click', resetAllStats);
+            DOM.hsLanguageFilter.addEventListener('change', renderHighScoresTable);
+            DOM.hsDifficultyFilter.addEventListener('change', renderHighScoresTable);
+            // Tab switching
+            document.querySelectorAll('.hs-tab').forEach(tab => {
+                tab.addEventListener('click', () => {
+                    document.querySelectorAll('.hs-tab').forEach(t => t.classList.remove('is-active'));
+                    tab.classList.add('is-active');
+                    const target = tab.dataset.tab;
+                    document.getElementById('stats-panel-scores').classList.toggle('hidden', target !== 'scores');
+                    document.getElementById('stats-panel-achievements').classList.toggle('hidden', target !== 'achievements');
+                });
+            });
 
             // Sync Main Lobby Configuration selections with Multiplayer Lobby selections
             DOM.configLanguage.addEventListener('change', () => {
@@ -2187,8 +2956,17 @@
                 timeSpent: 0,
                 combo: 0,
                 bestCombo: 0,
-                lastWpm: 0
+                bestMultiplier: 1,
+                lastWpm: 0,
+                wpmHistory: []
             };
+
+            // F5: Reset multiplier HUD
+            if (DOM.statMultiplier) {
+                DOM.statMultiplier.textContent = 'x1';
+                DOM.statMultiplier.className = 'multiplier-badge mt-1';
+                DOM.statMultiplier.dataset.tier = '1';
+            }
 
             // Re-bind textarea length limit parameters dynamically
             DOM.gameTypingInput.maxLength = State.targetSentence.length;
@@ -2253,6 +3031,9 @@
             DOM.statTime.textContent = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
 
             recalculateTypingMetrics();
+
+            // F4: Sample WPM for the chart
+            sampleWPM();
 
             if (State.gameMode === 'MULTIPLAYER') {
                 sendProgressToPeerNetwork();
@@ -2397,6 +3178,8 @@
                 if (State.localStats.combo > State.localStats.bestCombo) {
                     State.localStats.bestCombo = State.localStats.combo;
                 }
+                // F5: Update combo multiplier HUD
+                updateMultiplierHUD();
                 // F3: chime every 10 combo
                 if (State.localStats.combo > 0 && State.localStats.combo % 10 === 0) {
                     const ladder = Math.floor(State.localStats.combo / 10);
@@ -2412,6 +3195,7 @@
             } else if (lastIdx >= 0 && states[lastIdx] === 'incorrect') {
                 // Reset combo on error.
                 State.localStats.combo = 0;
+                updateMultiplierHUD();
             }
             State.localStats.lastWpm = State.localStats.wpm;
 
@@ -2540,11 +3324,56 @@
             DOM.gameTypingInput.disabled = true;
             AudioFX.playChime();
 
+            // F4: Final WPM sample
+            sampleWPM();
+
+            // Career stats: increment match count + track languages played
+            State.matchCount += 1;
+            localStorage.setItem('typeclash_match_count', State.matchCount);
+            if (!State.languagesPlayed.includes(State.targetLanguage)) {
+                State.languagesPlayed.push(State.targetLanguage);
+                localStorage.setItem('typeclash_languages', JSON.stringify(State.languagesPlayed));
+            }
+
+            // F2: Add to high scores (before XP so we know the new level)
+            addHighScore(State.localStats);
+
             // Award XP before showing results (so the results screen can show
             // XP earned + level-up banner). XP only awarded on completion.
             const xpBreakdown = calculateMatchXP(State.localStats, State.gameMode);
             State.lastMatchXP = xpBreakdown;
             applyXPEarned(xpBreakdown.total);
+
+            // F3: Check achievements (after XP/level is updated)
+            // For multiplayer, determine if local player won (1st place)
+            let isWinner = false;
+            if (State.gameMode === 'MULTIPLAYER' && State.leaderboard.length > 0) {
+                const myPeerId = State.peer ? State.peer.id : 'solo';
+                const topPlayer = State.leaderboard[0];
+                isWinner = topPlayer.peerId === myPeerId;
+            }
+            const achCtx = {
+                stats: State.localStats,
+                gameMode: State.gameMode,
+                playerLevel: State.playerLevel,
+                matchCount: State.matchCount,
+                languagesPlayed: State.languagesPlayed,
+                isWinner,
+            };
+            const newAchievements = checkAndAwardAchievements(achCtx);
+            // Show toasts for each newly unlocked achievement (staggered)
+            newAchievements.forEach((ach, i) => {
+                setTimeout(() => showAchievementToast(ach), 800 + i * 600);
+            });
+
+            // F1: Spawn confetti (solo always; multiplayer only if winner)
+            if (State.gameMode !== 'MULTIPLAYER' || isWinner) {
+                const emoji = getAvatarEmoji().char;
+                setTimeout(() => ConfettiFX.spawn(emoji, 80), 300);
+            }
+
+            // Update lobby stats summary for when player returns
+            updateStatsSummary();
 
             if (State.gameMode === 'MULTIPLAYER') {
                 sendProgressToPeerNetwork();
@@ -2747,6 +3576,10 @@
             renderStarRating();
             // Persistent XP: render XP earned + level-up banner.
             renderResultsXP();
+            // F4: render WPM curve chart
+            renderWPMChart();
+            // F3: render achievements unlocked this match
+            renderMatchAchievements();
 
             DOM.podiumContainer.innerHTML = '';
             const myCol = AVATAR_COLORS[State.avatarColorIdx];
