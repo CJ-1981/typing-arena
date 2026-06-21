@@ -1386,8 +1386,9 @@
         function sanitizeSentenceForFlashMode(str) {
             return str
                 .toLowerCase()
-                // Keep only Hangul syllables, Hangul Compatibility Jamos, basic alphanumeric characters, and single spacing
-                .replace(/[^a-zA-Z0-9\uAC00-\uD7A3\u3131-\u3163\s]/g, "")
+                // Keep any letter (Latin incl. German umlauts äöüÄÖÜß, Hangul, etc.) and any digit; strip punctuation/symbols.
+                // The `u` flag enables Unicode property escapes \p{L} (Letter) and \p{N} (Number).
+                .replace(/[^\p{L}\p{N}\s]/gu, "")
                 .replace(/\s+/g, " ")
                 .trim();
         }
