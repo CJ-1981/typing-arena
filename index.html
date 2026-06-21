@@ -1,0 +1,2031 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>⚡ TypeClash: Real-time Multi-Language Typing Arena</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- PeerJS for Serverless WebRTC -->
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+                        mono: ['"JetBrains Mono"', 'monospace'],
+                    },
+                    boxShadow: {
+                        'neon-violet': '0 0 15px rgba(139, 92, 246, 0.5), 0 0 5px rgba(139, 92, 246, 0.2)',
+                        'neon-cyan': '0 0 15px rgba(6, 182, 212, 0.5), 0 0 5px rgba(6, 182, 212, 0.2)',
+                        'neon-rose': '0 0 15px rgba(244, 63, 94, 0.5), 0 0 5px rgba(244, 63, 94, 0.2)',
+                    },
+                    animation: {
+                        'pulse-fast': 'pulse 1s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            background-color: #030712; /* gray-950 */
+            color: #f3f4f6; /* gray-100 */
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            overflow-x: hidden;
+        }
+
+        /* Ambient grid decoration */
+        .grid-bg {
+            background-image: linear-gradient(to right, rgba(255,255,255,0.03) 1px, transparent 1px),
+                              linear-gradient(to bottom, rgba(255,255,255,0.03) 1px, transparent 1px);
+            background-size: 24px 24px;
+        }
+
+        /* Minimal typography highlights (No underlines!) */
+        .char-correct { 
+            color: #10b981; /* emerald-500 */
+            text-shadow: 0 0 8px rgba(16, 185, 129, 0.35); 
+        }
+        .char-incorrect { 
+            color: #f43f5e; /* rose-500 */
+            background-color: rgba(244, 63, 94, 0.12);
+            border-radius: 2px;
+        }
+        .char-current { 
+            color: #06b6d4; /* cyan-500 */
+            background-color: rgba(6, 182, 212, 0.08);
+            border-left: 2px solid #06b6d4; 
+            animation: caretBlink 1s infinite; 
+        }
+        .char-untyped { 
+            color: #4b5563; /* gray-600 */
+        }
+
+        @keyframes caretBlink {
+            0%, 100% { border-left-color: #06b6d4; }
+            50% { border-left-color: transparent; }
+        }
+
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #0b0f19; }
+        ::-webkit-scrollbar-thumb { background: #1f2937; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #374151; }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col antialiased selection:bg-violet-500/30 selection:text-violet-200">
+
+    <!-- Ambient Grid Background decoration -->
+    <div class="fixed inset-0 pointer-events-none grid-bg z-0"></div>
+
+    <!-- MAIN NAV HEADER -->
+    <header class="border-b border-gray-900 bg-gray-950/80 backdrop-blur-md sticky top-0 z-50">
+        <div class="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="h-10 w-10 rounded-xl bg-gradient-to-tr from-violet-600 via-fuchsia-600 to-cyan-500 p-0.5 shadow-neon-violet flex items-center justify-center">
+                    <div class="w-full h-full bg-gray-950 rounded-[10px] flex items-center justify-center">
+                        <i data-lucide="keyboard" class="w-5 h-5 text-cyan-400"></i>
+                    </div>
+                </div>
+                <div>
+                    <h1 class="text-xl font-extrabold tracking-tight bg-gradient-to-r from-white via-gray-200 to-gray-400 bg-clip-text text-transparent">
+                        TypeClash <span class="text-xs font-bold px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 ml-1">P2P ARENA</span>
+                    </h1>
+                    <p class="text-[10px] text-gray-500 font-mono tracking-wider">SECURE DIRECT WEB RTC ENGINE</p>
+                </div>
+            </div>
+            
+            <div class="flex items-center gap-3">
+                <button id="audio-toggle-btn" class="p-2 rounded-lg bg-gray-900 border border-gray-800 text-gray-400 hover:text-white transition-colors flex items-center gap-1.5 text-xs font-mono" title="Toggle Sound Synth">
+                    <i id="audio-icon" data-lucide="volume-2" class="w-4 h-4"></i>
+                    <span>FX AUDIO</span>
+                </button>
+                <div class="text-xs font-mono px-3 py-1.5 rounded-lg bg-gray-900 border border-gray-800 text-gray-400 flex items-center gap-2">
+                    <div id="status-indicator" class="h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></div>
+                    <span id="connection-status">STANDBY</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- CONTENT WRAPPER -->
+    <main class="flex-grow max-w-6xl w-full mx-auto px-4 py-8 relative z-10 flex flex-col gap-6 justify-center">
+        
+        <!-- ================= LOBBY SETUP SCREEN ================= -->
+        <section id="screen-lobby" class="w-full max-w-xl mx-auto bg-gray-950/80 border border-gray-900 rounded-2xl p-6 md:p-8 shadow-2xl relative">
+            <div class="absolute -top-12 -left-12 w-48 h-48 bg-violet-600/10 rounded-full blur-3xl pointer-events-none"></div>
+            <div class="absolute -bottom-12 -right-12 w-48 h-48 bg-cyan-600/10 rounded-full blur-3xl pointer-events-none"></div>
+
+            <div class="text-center mb-6">
+                <h2 class="text-2xl font-bold text-white mb-2">Configure Profile</h2>
+                <p class="text-gray-400 text-sm">Choose your parameters, language options, and challenge rivals without server latency.</p>
+            </div>
+
+            <!-- Profile Parameters -->
+            <div class="space-y-5">
+                <div>
+                    <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2 font-mono">My Nickname</label>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                            <i data-lucide="user" class="text-gray-500 w-4 h-4"></i>
+                        </div>
+                        <input id="player-nickname" type="text" maxlength="15" placeholder="Speedster_99" 
+                               class="w-full bg-gray-900/60 border border-gray-800 rounded-xl py-3 pl-10 pr-4 text-white placeholder-gray-600 focus:outline-none focus:border-violet-500 transition-colors focus:shadow-neon-violet font-semibold text-sm">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2 font-mono">Avatar Theme Color</label>
+                    <div class="grid grid-cols-6 gap-2.5" id="avatar-color-grid">
+                        <!-- Loaded dynamically -->
+                    </div>
+                </div>
+
+                <!-- Central Match Configuration Parameters (Accessible directly outside lobby) -->
+                <div class="bg-gray-900/30 border border-gray-900 p-4 rounded-xl space-y-4">
+                    <span class="text-[10px] font-bold text-violet-400 uppercase tracking-wider font-mono block">Game Settings</span>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-[10px] text-gray-500 uppercase tracking-wider mb-1 font-mono">Keyboard Language</label>
+                            <select id="config-language" class="w-full bg-gray-950 border border-gray-850 rounded-lg p-2 text-xs text-white focus:outline-none focus:border-violet-500 font-medium font-mono">
+                                <option value="en">English (Standard Quotes)</option>
+                                <option value="de">Deutsch (German Umlauts ä,ö,ü,ß)</option>
+                                <option value="ko">한국어 (Korean / Jamo Engine)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] text-gray-500 uppercase tracking-wider mb-1 font-mono">Sentence Length</label>
+                            <select id="config-difficulty" class="w-full bg-gray-950 border border-gray-850 rounded-lg p-2 text-xs text-white focus:outline-none focus:border-violet-500 font-medium font-mono">
+                                <option value="short">Short Phrases (Fast Reflexes)</option>
+                                <option value="medium" selected>Medium Quotes</option>
+                                <option value="long">Long Endurance Sentences</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Flash Mode Option Section -->
+                    <div class="flex items-center justify-between pt-2 border-t border-gray-900">
+                        <div class="flex flex-col">
+                            <span class="text-xs font-semibold text-white flex items-center gap-1">
+                                <i data-lucide="zap" class="w-3.5 h-3.5 text-amber-400 fill-amber-400"></i>
+                                Flash Typing Mode
+                            </span>
+                            <span class="text-[10px] text-gray-500">Strips casing & all punctuation for speed.</span>
+                        </div>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" id="config-flash-mode" class="sr-only peer">
+                            <div class="w-9 h-5 bg-gray-850 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-gray-400 after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-violet-600 peer-checked:after:bg-white"></div>
+                        </label>
+                    </div>
+                </div>
+
+                <hr class="border-gray-900 my-4">
+
+                <!-- Split paths: Local Practice vs Host vs Join -->
+                <div class="space-y-3">
+                    <button id="btn-solo-practice" class="w-full py-3.5 px-5 rounded-xl bg-gradient-to-r from-emerald-600/20 to-teal-600/20 hover:from-emerald-600/30 hover:to-teal-600/30 border border-emerald-500/20 hover:border-emerald-500/40 font-bold transition-all flex items-center justify-between text-emerald-300 group shadow-lg">
+                        <span class="flex items-center gap-2.5 text-sm">
+                            <i data-lucide="play" class="w-4 h-4 text-emerald-400 group-hover:scale-110 transition-transform"></i>
+                            Solo Practice Arena
+                        </span>
+                        <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-950/40 text-emerald-400 border border-emerald-500/20 flex items-center gap-1">
+                            <span>Practice</span>
+                            <kbd class="hidden sm:inline-block px-1 bg-emerald-900/60 rounded text-[9px]">Shift+Enter</kbd>
+                        </span>
+                    </button>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <button id="btn-create-lobby" class="py-3.5 px-5 rounded-xl bg-violet-600/10 hover:bg-violet-600/20 border border-violet-500/20 hover:border-violet-500/40 font-bold transition-all flex flex-col items-start gap-1 group shadow-lg text-left">
+                            <span class="flex items-center gap-2 text-violet-300 text-sm">
+                                <i data-lucide="plus-circle" class="w-4 h-4 text-violet-400 group-hover:scale-110 transition-transform"></i>
+                                Host Clash Room
+                            </span>
+                            <span class="text-[10px] text-violet-400/60 font-normal">Create direct WebRTC host room link</span>
+                        </button>
+
+                        <button id="btn-join-lobby-toggle" class="py-3.5 px-5 rounded-xl bg-cyan-600/10 hover:bg-cyan-600/20 border border-cyan-500/20 hover:border-cyan-500/40 font-bold transition-all flex flex-col items-start gap-1 group shadow-lg text-left">
+                            <span class="flex items-center gap-2 text-cyan-300 text-sm">
+                                <i data-lucide="users" class="w-4 h-4 text-cyan-400 group-hover:scale-110 transition-transform"></i>
+                                Join Room Code
+                            </span>
+                            <span class="text-[10px] text-cyan-400/60 font-normal">Connect directly with a room ID</span>
+                        </button>
+                    </div>
+
+                    <!-- Expandable Join Input Area -->
+                    <div id="join-input-area" class="hidden p-4 rounded-xl bg-gray-900/50 border border-gray-800 space-y-3 transition-all duration-300">
+                        <label class="block text-[10px] font-bold text-gray-400 uppercase font-mono">Paste Connection Key</label>
+                        <div class="flex gap-2">
+                            <input id="input-room-id" type="text" placeholder="Enter Room Key..." class="flex-grow bg-gray-950 border border-gray-800 rounded-lg px-3 py-2 text-white placeholder-gray-600 focus:outline-none focus:border-cyan-500 font-mono text-xs">
+                            <button id="btn-submit-join" class="bg-cyan-500 hover:bg-cyan-600 text-gray-950 font-bold px-4 py-2 rounded-lg transition-colors text-xs flex items-center gap-1">
+                                <span>Connect</span>
+                                <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= SERVERLESS MULTIPLAYER LOBBY SCREEN ================= -->
+        <section id="screen-multiplayer-lobby" class="hidden w-full max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-6">
+            
+            <!-- Left Panel: Connection details & configuration -->
+            <div class="md:col-span-2 bg-gray-950/80 border border-gray-900 rounded-2xl p-6 flex flex-col justify-between shadow-2xl">
+                <div>
+                    <div class="flex justify-between items-start mb-5">
+                        <div>
+                            <span class="text-xs font-mono font-bold bg-violet-500/10 text-violet-400 px-2.5 py-1 rounded-full border border-violet-500/20 uppercase tracking-wider">Multiplayer Lobby</span>
+                            <h2 class="text-2xl font-bold text-white mt-2">Active Battle Arena</h2>
+                        </div>
+                        <div id="badge-host-guest" class="px-3 py-1 rounded-lg text-xs font-semibold font-mono bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                            HOST
+                        </div>
+                    </div>
+
+                    <!-- Invite Link Area -->
+                    <div class="bg-gray-900/40 border border-gray-800 rounded-xl p-4 mb-5">
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="text-xs font-semibold text-gray-400 font-mono flex items-center gap-1.5">
+                                <i data-lucide="share-2" class="w-3.5 h-3.5 text-cyan-400"></i> Room Invite Code
+                            </span>
+                            <span class="text-[10px] text-amber-400 font-mono font-bold">Copy invite to challenge others!</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <input id="invite-room-id-box" type="text" readonly class="flex-grow bg-gray-950/60 border border-gray-850 rounded-lg px-3 py-2 text-xs font-mono text-cyan-400 focus:outline-none" value="...">
+                            <button id="btn-copy-invite" class="p-2 bg-gray-800 hover:bg-gray-750 border border-gray-700 hover:border-gray-600 rounded-lg text-white font-semibold text-xs flex items-center gap-1 transition-all">
+                                <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+                                <span>Copy Link</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Sync Lobby Config Display (Informs guests, lets Host configure) -->
+                    <div class="bg-gray-900/20 border border-gray-900 rounded-xl p-4 space-y-4">
+                        <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider font-mono block">Lobby Settings Matrix</span>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-[10px] text-gray-500 uppercase tracking-wider mb-1 font-mono">Lobby Keyboard Layout</label>
+                                <select id="lobby-select-language" class="w-full bg-gray-950 border border-gray-850 rounded-lg p-2 text-xs text-white focus:outline-none focus:border-violet-500 font-medium font-mono">
+                                    <option value="en">English (Quotes)</option>
+                                    <option value="de">Deutsch (Umlauts)</option>
+                                    <option value="ko">한국어 (Hangul)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-[10px] text-gray-500 uppercase tracking-wider mb-1 font-mono">Sentence Block Pool</label>
+                                <select id="lobby-select-difficulty" class="w-full bg-gray-950 border border-gray-850 rounded-lg p-2 text-xs text-white focus:outline-none focus:border-violet-500 font-medium font-mono">
+                                    <option value="short">Short</option>
+                                    <option value="medium">Medium</option>
+                                    <option value="long">Long</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Flash typing sync in lobby -->
+                        <div class="flex items-center justify-between pt-2 border-t border-gray-950">
+                            <span class="text-xs font-semibold text-white flex items-center gap-1 font-mono">
+                                <i data-lucide="zap" class="w-3.5 h-3.5 text-amber-400"></i>
+                                Synchronize Flash Mode
+                            </span>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" id="lobby-flash-mode" class="sr-only peer">
+                                <div class="w-9 h-5 bg-gray-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-gray-500 after:border-gray-400 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-violet-600"></div>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-8 pt-5 border-t border-gray-900 flex gap-3">
+                    <button id="btn-disconnect-lobby" class="px-5 py-3 rounded-lg bg-gray-900 hover:bg-rose-950/20 border border-gray-800 hover:border-rose-900/30 font-bold transition-all text-xs text-rose-400 flex items-center gap-1.5">
+                        <i data-lucide="log-out" class="w-4 h-4"></i>
+                        <span>Disconnect</span>
+                    </button>
+                    
+                    <button id="btn-host-start-clash" class="flex-grow py-3 rounded-lg bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 text-white font-bold transition-all shadow-neon-violet text-sm flex items-center justify-center gap-2">
+                        <i data-lucide="swords" class="w-5 h-5"></i>
+                        <span>Start Synchronized Battle!</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Right Panel: Players waiting list -->
+            <div class="bg-gray-950/80 border border-gray-900 rounded-2xl p-6 flex flex-col justify-between shadow-2xl">
+                <div>
+                    <h3 class="text-sm font-bold text-white uppercase tracking-wider font-mono mb-4 flex items-center gap-2">
+                        <i data-lucide="users-round" class="w-4 h-4 text-violet-400"></i> Connected Roster
+                    </h3>
+                    <div id="lobby-player-list" class="space-y-2.5">
+                        <!-- Filled Dynamically -->
+                    </div>
+                </div>
+                <div class="mt-6 pt-4 border-t border-gray-900">
+                    <p class="text-[10px] font-mono text-gray-500 leading-relaxed">
+                        * P2P mesh network provides direct browser synchronizations. Sentences and game status triggers are synchronized by the Lobby Host.
+                    </p>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- ================= MAIN GAME CLASH ARENA ================= -->
+        <section id="screen-game-arena" class="hidden w-full max-w-4xl mx-auto space-y-6">
+            
+            <!-- Real-time Progress Tracking Race Track -->
+            <div class="bg-gray-950/90 border border-gray-900 rounded-2xl p-6 shadow-xl relative overflow-hidden">
+                <div class="absolute inset-0 bg-gradient-to-b from-transparent to-violet-950/5 pointer-events-none"></div>
+                <div class="flex items-center justify-between mb-4">
+                    <span class="text-xs font-bold uppercase font-mono tracking-wider text-gray-400 flex items-center gap-1.5">
+                        <i data-lucide="gauge" class="text-violet-400 w-4 h-4"></i> Live Match Tracker
+                    </span>
+                    <div class="flex items-center gap-2">
+                        <span id="flash-badge-indicator" class="hidden text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20 flex items-center gap-1">
+                            <i data-lucide="zap" class="w-3 h-3 fill-amber-400"></i> FLASH MODE
+                        </span>
+                        <span class="text-xs font-mono px-2.5 py-0.5 rounded bg-gray-900 border border-gray-800 text-gray-400" id="game-difficulty-badge">Medium</span>
+                    </div>
+                </div>
+
+                <!-- Race Tracks Container -->
+                <div id="race-tracks-container" class="space-y-4">
+                    <!-- Tracks rendered by JS -->
+                </div>
+            </div>
+
+            <!-- Typing Interface Core -->
+            <div class="bg-gray-950/80 border border-gray-900 rounded-2xl p-6 md:p-8 shadow-2xl space-y-6 relative">
+                
+                <!-- Countdown Overlay -->
+                <div id="countdown-overlay" class="hidden absolute inset-0 bg-gray-950/95 rounded-2xl z-20 flex flex-col items-center justify-center gap-3 backdrop-blur-sm transition-all duration-300">
+                    <span id="countdown-timer-num" class="text-8xl font-black font-mono bg-gradient-to-tr from-violet-400 via-fuchsia-400 to-cyan-400 bg-clip-text text-transparent transform scale-50 transition-all duration-300">3</span>
+                    <span class="text-xs font-semibold tracking-widest text-gray-400 uppercase font-mono">Position your hands...</span>
+                </div>
+
+                <!-- Live HUD -->
+                <div class="grid grid-cols-4 gap-4 bg-gray-900/30 p-3.5 rounded-xl border border-gray-900/80 font-mono">
+                    <div class="text-center">
+                        <span class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest">WPM</span>
+                        <span id="stat-wpm" class="text-2xl font-extrabold text-cyan-400">0</span>
+                    </div>
+                    <div class="text-center border-l border-gray-900">
+                        <span class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest">CPM</span>
+                        <span id="stat-cpm" class="text-2xl font-extrabold text-violet-400">0</span>
+                    </div>
+                    <div class="text-center border-l border-gray-900">
+                        <span class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest">Accuracy</span>
+                        <span id="stat-accuracy" class="text-2xl font-extrabold text-emerald-400">100%</span>
+                    </div>
+                    <div class="text-center border-l border-gray-900">
+                        <span class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest">Time</span>
+                        <span id="stat-time" class="text-2xl font-extrabold text-rose-400">00:00</span>
+                    </div>
+                </div>
+
+                <!-- Text Target Area -->
+                <div class="p-6 rounded-xl bg-gray-900/20 border border-gray-900 min-h-[100px] flex items-center justify-center leading-relaxed">
+                    <!-- Complete responsive auto-wrap configuration -->
+                    <div id="sentence-display-box" class="font-mono text-lg md:text-xl font-normal leading-loose tracking-wide whitespace-pre-wrap break-words overflow-wrap-anywhere select-none text-left w-full">
+                        <!-- Filled by active evaluation parser -->
+                    </div>
+                </div>
+
+                <!-- Korean layout notifications -->
+                <div id="ime-indicator" class="hidden p-3 rounded-lg bg-cyan-950/20 border border-cyan-900/30 flex items-center gap-2.5 text-xs text-cyan-400 font-mono">
+                    <i data-lucide="languages" class="w-4 h-4"></i>
+                    <span>Hangul composition auto-detection is active. Jamo stroke calculation unlocked.</span>
+                </div>
+
+                <!-- Auto-wrapping Input Area (Replaces single line input boxes) -->
+                <div class="relative">
+                    <textarea id="game-typing-input" rows="2" autocomplete="off" autofocus placeholder="First keypress starts the match timer..." 
+                              autocorrect="off" autocapitalize="none" spellcheck="false"
+                              class="w-full bg-gray-900/80 border border-gray-800 focus:border-violet-500 rounded-xl py-3.5 px-4 text-white font-mono text-lg placeholder-gray-600 focus:outline-none focus:ring-1 focus:ring-violet-500 focus:shadow-neon-violet transition-all duration-200 resize-none whitespace-pre-wrap break-words overflow-wrap-anywhere"></textarea>
+                    
+                    <div class="absolute right-4 bottom-4 flex items-center gap-1.5 pointer-events-none opacity-60">
+                        <span class="text-[9px] bg-gray-950 text-gray-400 px-2 py-0.5 rounded border border-gray-800 font-mono">IME SAFE</span>
+                    </div>
+                </div>
+
+                <div class="flex justify-between items-center text-[10px] text-gray-500 font-mono">
+                    <span>Press <kbd class="px-1.5 py-0.5 bg-gray-900 rounded border border-gray-800 text-gray-300">Esc</kbd> to return to lobby</span>
+                    <button id="btn-abort-match" class="text-rose-400/80 hover:text-rose-400 font-bold flex items-center gap-1">
+                        <i data-lucide="x" class="w-3.5 h-3.5"></i>
+                        <span>Cancel Battle</span>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= LEADERBOARD PODIUM / STATS REPORT SCREEN ================= -->
+        <section id="screen-game-results" class="hidden w-full max-w-2xl mx-auto space-y-6">
+            <div class="bg-gray-950/80 border border-gray-900 rounded-2xl p-6 md:p-8 shadow-2xl relative">
+                <div class="absolute -top-12 -left-12 w-48 h-48 bg-emerald-600/10 rounded-full blur-3xl pointer-events-none"></div>
+                
+                <div class="text-center mb-6">
+                    <span class="text-xs font-mono font-bold bg-emerald-500/10 text-emerald-400 px-2.5 py-1 rounded-full border border-emerald-500/20 uppercase tracking-wider">Battle Complete</span>
+                    <h2 class="text-3xl font-extrabold text-white mt-3">Match Performance Diagnostics</h2>
+                    <p class="text-gray-400 text-xs mt-1">Direct WebRTC network rankings report.</p>
+                </div>
+
+                <!-- Podium Representation -->
+                <div id="podium-container" class="grid grid-cols-3 gap-3 max-w-md mx-auto items-end mb-6 pt-4">
+                    <!-- Dynamic podium slots -->
+                </div>
+
+                <!-- Summary Scores Board Table -->
+                <div class="border border-gray-900 rounded-xl overflow-hidden bg-gray-900/10 mb-6">
+                    <table class="w-full text-left border-collapse font-mono text-xs">
+                        <thead>
+                            <tr class="bg-gray-950/60 border-b border-gray-900 text-gray-400 font-bold uppercase tracking-wider">
+                                <th class="p-3.5">Rank</th>
+                                <th class="p-3.5">Competitor</th>
+                                <th class="p-3.5 text-center">WPM</th>
+                                <th class="p-3.5 text-center">CPM (Strokes)</th>
+                                <th class="p-3.5 text-center">Accuracy</th>
+                            </tr>
+                        </thead>
+                        <tbody id="results-table-body" class="divide-y divide-gray-950 text-gray-300">
+                            <!-- Dynamic stats injection -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="flex gap-3 justify-center">
+                    <button id="btn-results-return" class="px-5 py-3 bg-gray-900 hover:bg-gray-850 border border-gray-800 rounded-xl font-bold text-xs text-gray-300 transition-colors flex items-center gap-1.5 font-mono">
+                        <i data-lucide="arrow-left" class="w-4 h-4"></i>
+                        <span>LOBBY <kbd class="px-1 bg-gray-800 rounded text-[9px] text-gray-400">Esc</kbd></span>
+                    </button>
+                    <button id="btn-results-play-again" class="flex-grow max-w-xs py-3 bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 text-white font-bold rounded-xl text-xs transition-all shadow-neon-violet flex items-center justify-center gap-1.5 font-mono">
+                        <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
+                        <span>REPLAY MATCH <kbd class="px-1 bg-violet-850/60 rounded text-[9px] text-violet-200">Shift+Enter</kbd></span>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="border-t border-gray-900 py-6 text-center text-[10px] text-gray-600 font-mono mt-auto relative z-10">
+        <div class="max-w-6xl mx-auto px-4 flex flex-col md:flex-row items-center justify-between gap-2">
+            <span>© 2026 TypeClash P2P Arena. Serverless WebRTC Mesh Engine.</span>
+            <div class="flex gap-4 items-center">
+                <span>Hangul Stroke CPM Engine Enabled</span>
+                <span class="text-violet-500 font-bold">•</span>
+                <span>Optimized layout handling (Esc/Shift+Enter support)</span>
+            </div>
+        </div>
+    </footer>
+
+    <!-- JS GAME CONTROLLER LOGIC -->
+    <script>
+        // Massive Category-Exhaustive Dictionary
+        const DICTIONARIES = {
+            en: {
+                short: [
+                    "The quick brown fox jumps over the lazy dog.",
+                    "Pack my box with five dozen liquor jugs.",
+                    "Sphinx of black quartz, judge my vow.",
+                    "How vexingly quick daft zebras jump!",
+                    "Two driven jocks help fax my big quiz.",
+                    "Practice makes perfect output always.",
+                    "No code is faster than no code at all.",
+                    "A journey of a thousand miles begins with a step."
+                ],
+                medium: [
+                    "Talk is cheap. Show me the code.",
+                    "Programs must be written for people to read, and only incidentally for machines to execute.",
+                    "In some ways, programming is like painting. You start with a blank canvas and some raw materials.",
+                    "Simple is better than complex. Complex is better than complicated.",
+                    "The best way to predict the future is to invent it.",
+                    "Do not comment bad code, rewrite it for humans to understand clearly.",
+                    "You cannot make great things without making smaller things first."
+                ],
+                long: [
+                    "Success is not final, failure is not fatal: it is the courage to continue that counts in the grand design of things.",
+                    "You miss one hundred percent of the shots you do not take. You have to step up, position yourself, and make a move.",
+                    "Security is mostly a superstition. It does not exist in nature, nor do the children of men as a whole experience it.",
+                    "It is not the strongest of the species that survives, nor the most intelligent, but the one most responsive to change."
+                ]
+            },
+            de: {
+                short: [
+                    "Franz jagt im komplett verwahrlosten Taxi quer durch Bayern.",
+                    "Prall vom Wein zog der Knecht die dicke Gans am Schwanz.",
+                    "Zwei Boxkämpfer jagen Eva quer durch Sylt.",
+                    "Vogel Quax fliegt mit sechs schweren Zylindern über Sylt.",
+                    "Kauf Heu für das süße Pony auf dem großen Bauernhof.",
+                    "Mensch ärgere dich nicht beim Tippen."
+                ],
+                medium: [
+                    "Wer den Pfennig nicht ehrt, ist des Talers nicht wert.",
+                    "Es ist nicht alles Gold, was glänzt, aber vieles glänzt schön.",
+                    "Man muss die Dinge so einfach wie möglich machen. Aber nicht einfacher.",
+                    "Die Grenzen meiner Sprache bedeuten die Grenzen meiner Welt.",
+                    "Es gibt kein schlechtes Wetter, es gibt nur falsche Kleidung."
+                ],
+                long: [
+                    "Die Weisheit eines Menschen misst man nicht nach seinen Erfahrungen, sondern nach seiner Fähigkeit, Erfahrungen zu machen.",
+                    "Unsere Träume können wir nur dann verwirklichen, wenn wir uns entschließen, aus ihnen aufzuwachen und das Werk zu beginnen.",
+                    "Der Schlüssel zu allem ist Geduld. Nicht durch Aufschlagen, sondern durch Ausbrüten wird das Ei zum Küken."
+                ]
+            },
+            ko: {
+                short: [
+                    "다람쥐 쳇바퀴에 타고파.",
+                    "닭 잡고 치킨 먹는 날.",
+                    "키스의 고유명사는 입술 맞춤.",
+                    "가장 아름다운 하늘빛 무지개 색.",
+                    "봄바람 휘날리며 흩날리는 벚꽃 잎.",
+                    "여우비 내리는 푸른 여름 밤."
+                ],
+                medium: [
+                    "말 한 마디로 천 냥 빚을 갚는다.",
+                    "가장 쓸모없는 걱정은 다가오지 않은 내일에 대한 염려다.",
+                    "작은 일에 성실한 사람은 큰 일에도 성실하다.",
+                    "컴퓨터 프로그래밍은 단순한 기술이 아니라 예술적 행위와 같다.",
+                    "인생에서 가장 낭비되는 시간은 시작하지 않고 고민하는 시간이다."
+                ],
+                long: [
+                    "성공은 최종적인 것이 아니며 실패는 치명적인 것이 아니다. 중요한 것은 멈추지 않고 앞으로 계속 나아가는 용기이다.",
+                    "인간의 삶은 끊임없는 선택의 연속이며, 그 선택들이 모여 결국 우리 자신의 미래를 아름답게 규정하게 된다.",
+                    "배우고 때로 익히면 또한 즐겁지 아니한가. 배움의 깊이는 끝이 없으며 지식은 무기가 된다."
+                ]
+            }
+        };
+
+        const AVATAR_COLORS = [
+            { name: "Neon Violet", class: "bg-violet-600 shadow-neon-violet text-violet-200", hex: "#8b5cf6" },
+            { name: "Neon Cyan", class: "bg-cyan-500 shadow-neon-cyan text-cyan-200", hex: "#06b6d4" },
+            { name: "Neon Rose", class: "bg-rose-500 shadow-neon-rose text-rose-200", hex: "#f43f5e" },
+            { name: "Emerald Glint", class: "bg-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.5)] text-emerald-100", hex: "#10b981" },
+            { name: "Amber Sparks", class: "bg-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.5)] text-amber-100", hex: "#f59e0b" },
+            { name: "Electric Orange", class: "bg-orange-500 shadow-[0_0_15px_rgba(249,115,22,0.5)] text-orange-100", hex: "#f97316" }
+        ];
+
+        // Web Audio Synthesizer (Zero asset dependency)
+        const AudioFX = {
+            ctx: null,
+            enabled: true,
+
+            init() {
+                try {
+                    this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+                } catch (e) {
+                    console.warn("Audio Context setup not supported", e);
+                }
+            },
+
+            toggle() {
+                this.enabled = !this.enabled;
+                return this.enabled;
+            },
+
+            playOsc(freq, type, duration, volume = 0.2, fadeOut = true) {
+                if (!this.enabled) return;
+                if (!this.ctx) this.init();
+                if (this.ctx && this.ctx.state === 'suspended') {
+                    this.ctx.resume();
+                }
+
+                try {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+
+                    osc.type = type;
+                    osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+
+                    gain.gain.setValueAtTime(volume, this.ctx.currentTime);
+                    if (fadeOut) {
+                        gain.gain.exponentialRampToValueAtTime(0.0001, this.ctx.currentTime + duration);
+                    }
+
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+
+                    osc.start();
+                    osc.stop(this.ctx.currentTime + duration);
+                } catch (e) {}
+            },
+
+            playClick() { this.playOsc(650, 'sine', 0.05, 0.06); },
+            playError() { this.playOsc(120, 'sawtooth', 0.12, 0.18); },
+            playCountdown() { this.playOsc(400, 'triangle', 0.1, 0.2); },
+            playStart() { this.playOsc(800, 'sine', 0.25, 0.25); },
+            playChime() {
+                if (!this.enabled || !this.ctx) return;
+                const now = this.ctx.currentTime;
+                const chords = [523.25, 659.25, 783.99, 1046.50];
+                chords.forEach((freq, i) => {
+                    setTimeout(() => this.playOsc(freq, 'sine', 0.45, 0.12), i * 90);
+                });
+            }
+        };
+
+        // Complete Unicode Korean Jamo Engine
+        const CHOSEONG = ['ㄱ', 'ㄲ', 'ㄴ', 'ㄷ', 'ㄸ', 'ㄹ', 'ㅁ', 'ㅂ', 'ㅃ', 'ㅅ', 'ㅆ', 'ㅇ', 'ㅈ', 'ㅉ', 'ㅊ', 'ㅋ', 'ㅌ', 'ㅍ', 'ㅎ'];
+        const JUNGSEONG = ['ㅏ', 'ㅐ', 'ㅑ', 'ㅒ', 'ㅓ', 'ㅔ', 'ㅕ', 'ㅖ', 'ㅗ', 'ㅘ', 'ㅙ', 'ㅚ', 'ㅛ', 'ㅜ', 'ㅝ', 'ㅞ', 'ㅟ', 'ㅠ', 'ㅡ', 'ㅢ', 'ㅣ'];
+        const JONGSEONG = ['', 'ㄱ', 'ㄲ', 'ㄳ', 'ㄴ', 'ㄵ', 'ㄶ', 'ㄷ', 'ㄹ', 'ㄺ', 'ㄻ', 'ㄼ', 'ㄽ', 'ㄾ', 'ㄿ', 'ㅀ', 'ㅁ', 'ㅂ', 'ㅄ', 'ㅅ', 'ㅆ', 'ㅇ', 'ㅈ', 'ㅊ', 'ㅋ', 'ㅌ', 'ㅍ', 'ㅎ'];
+
+        const COMPLEX_VOWELS = {
+            'ㅘ': ['ㅗ', 'ㅏ'], 'ㅙ': ['ㅗ', 'ㅐ'], 'ㅚ': ['ㅗ', 'ㅣ'],
+            'ㅝ': ['ㅜ', 'ㅓ'], 'ㅞ': ['ㅜ', 'ㅔ'], 'ㅟ': ['ㅜ', 'ㅣ'], 'ㅢ': ['ㅡ', 'ㅣ']
+        };
+
+        const COMPLEX_CONSONANTS = {
+            'ㄳ': ['ㄱ', 'ㅅ'], 'ㄵ': ['ㄴ', 'ㅈ'], 'ㄶ': ['ㄴ', 'ㅎ'],
+            'ㄺ': ['ㄹ', 'ㄱ'], 'ㄻ': ['ㄹ', 'ㅁ'], 'ㄼ': ['ㄹ', 'ㅂ'],
+            'ㄽ': ['ㄹ', 'ㅅ'], 'ㄾ': ['ㄹ', 'ㅌ'], 'ㄿ': ['ㄹ', 'ㅍ'],
+            'ㅀ': ['ㄹ', 'ㅎ'], 'ㅄ': ['ㅂ', 'ㅅ'], 'ㄲ': ['ㄱ', 'ㄱ'], 'ㅆ': ['ㅅ', 'ㅅ']
+        };
+
+        function decomposeHangul(char) {
+            if (!char) return [];
+            const code = char.charCodeAt(0);
+            
+            // Hangul Syllable boundaries
+            if (code >= 0xAC00 && code <= 0xD7A3) {
+                const offset = code - 0xAC00;
+                const jongIdx = offset % 28;
+                const jungIdx = ((offset - jongIdx) / 28) % 21;
+                const choIdx = Math.floor(((offset - jongIdx) / 28) / 21);
+
+                let result = [CHOSEONG[choIdx]];
+                const jung = JUNGSEONG[jungIdx];
+                if (COMPLEX_VOWELS[jung]) {
+                    result.push(...COMPLEX_VOWELS[jung]);
+                } else {
+                    result.push(jung);
+                }
+
+                if (jongIdx > 0) {
+                    const jong = JONGSEONG[jongIdx];
+                    if (COMPLEX_CONSONANTS[jong]) {
+                        result.push(...COMPLEX_CONSONANTS[jong]);
+                    } else {
+                        result.push(jong);
+                    }
+                }
+                return result;
+            }
+
+            // Compatibility Hangul Jamo
+            if (code >= 0x3131 && code <= 0x3163) {
+                if (COMPLEX_CONSONANTS[char]) return [...COMPLEX_CONSONANTS[char]];
+                if (COMPLEX_VOWELS[char]) return [...COMPLEX_VOWELS[char]];
+                return [char];
+            }
+
+            return [char];
+        }
+
+        // Korean Active Composition Matching Checks
+        function isKoreanPartialMatch(typedChar, targetChar) {
+            const typedDecomp = decomposeHangul(typedChar);
+            const targetDecomp = decomposeHangul(targetChar);
+
+            if (typedDecomp.length === 0 || targetDecomp.length === 0) return false;
+            for (let i = 0; i < typedDecomp.length; i++) {
+                if (typedDecomp[i] !== targetDecomp[i]) return false;
+            }
+            return true;
+        }
+
+        // Onset-transition carryover matching (e.g. "다" + "ㄹ" -> "달" which completes "다" and starts "람")
+        function isHangulCarryover(typedChar, targetChar, nextTargetChar) {
+            if (!nextTargetChar) return false;
+
+            const typedDecomp = decomposeHangul(typedChar);
+            const targetDecomp = decomposeHangul(targetChar);
+            const nextTargetDecomp = decomposeHangul(nextTargetChar);
+
+            if (typedDecomp.length <= targetDecomp.length) return false;
+
+            // Verify prefix matches the target
+            for (let i = 0; i < targetDecomp.length; i++) {
+                if (typedDecomp[i] !== targetDecomp[i]) return false;
+            }
+
+            const extraJamos = typedDecomp.slice(targetDecomp.length);
+            if (extraJamos.length > 0 && nextTargetDecomp.length > 0) {
+                return extraJamos[0] === nextTargetDecomp[0];
+            }
+
+            return false;
+        }
+
+        // State Machine Object
+        const State = {
+            nickname: localStorage.getItem('typeclash_name') || '',
+            avatarColorIdx: parseInt(localStorage.getItem('typeclash_avatar_idx')) || 0,
+            roomId: '',
+            peer: null,
+            connections: [],
+            activeConn: null,
+            isHost: false,
+            gameMode: 'SOLO',
+            gameState: 'LOBBY',
+            flashMode: false,
+
+            targetSentence: '',
+            targetLanguage: 'en',
+            targetDifficulty: 'medium',
+            
+            startTime: null,
+            timeElapsed: 0,
+            timerInterval: null,
+            playedSentences: [], // Prevention tracking pool
+            
+            localStats: {
+                charsTyped: 0,
+                correctChars: 0,
+                errorsCount: 0,
+                wpm: 0,
+                cpm: 0,
+                accuracy: 100,
+                progress: 0,
+                finished: false,
+                rank: null,
+                timeSpent: 0
+            },
+            leaderboard: []
+        };
+
+        // DOM mappings
+        const DOM = {
+            screenLobby: document.getElementById('screen-lobby'),
+            screenMultiplayerLobby: document.getElementById('screen-multiplayer-lobby'),
+            screenGameArena: document.getElementById('screen-game-arena'),
+            screenGameResults: document.getElementById('screen-game-results'),
+            
+            playerNickname: document.getElementById('player-nickname'),
+            avatarColorGrid: document.getElementById('avatar-color-grid'),
+            
+            btnSoloPractice: document.getElementById('btn-solo-practice'),
+            btnCreateLobby: document.getElementById('btn-create-lobby'),
+            btnJoinLobbyToggle: document.getElementById('btn-join-lobby-toggle'),
+            joinInputArea: document.getElementById('join-input-area'),
+            inputRoomId: document.getElementById('input-room-id'),
+            btnSubmitJoin: document.getElementById('btn-submit-join'),
+            
+            connectionStatus: document.getElementById('connection-status'),
+            statusIndicator: document.getElementById('status-indicator'),
+            badgeHostGuest: document.getElementById('badge-host-guest'),
+            inviteRoomIdBox: document.getElementById('invite-room-id-box'),
+            btnCopyInvite: document.getElementById('btn-copy-invite'),
+            lobbySelectLanguage: document.getElementById('lobby-select-language'),
+            lobbySelectDifficulty: document.getElementById('lobby-select-difficulty'),
+            lobbyPlayerList: document.getElementById('lobby-player-list'),
+            btnDisconnectLobby: document.getElementById('btn-disconnect-lobby'),
+            btnHostStartClash: document.getElementById('btn-host-start-clash'),
+            
+            raceTracksContainer: document.getElementById('race-tracks-container'),
+            countdownOverlay: document.getElementById('countdown-overlay'),
+            countdownTimerNum: document.getElementById('countdown-timer-num'),
+            gameDifficultyBadge: document.getElementById('game-difficulty-badge'),
+            flashBadgeIndicator: document.getElementById('flash-badge-indicator'),
+            
+            statWpm: document.getElementById('stat-wpm'),
+            statCpm: document.getElementById('stat-cpm'),
+            statAccuracy: document.getElementById('stat-accuracy'),
+            statTime: document.getElementById('stat-time'),
+            sentenceDisplayBox: document.getElementById('sentence-display-box'),
+            imeIndicator: document.getElementById('ime-indicator'),
+            gameTypingInput: document.getElementById('game-typing-input'),
+            btnAbortMatch: document.getElementById('btn-abort-match'),
+            
+            podiumContainer: document.getElementById('podium-container'),
+            resultsTableBody: document.getElementById('results-table-body'),
+            btnResultsReturn: document.getElementById('btn-results-return'),
+            btnResultsPlayAgain: document.getElementById('btn-results-play-again'),
+            audioToggleBtn: document.getElementById('audio-toggle-btn'),
+            audioIcon: document.getElementById('audio-icon'),
+
+            configLanguage: document.getElementById('config-language'),
+            configDifficulty: document.getElementById('config-difficulty'),
+            configFlashMode: document.getElementById('config-flash-mode'),
+            lobbyFlashMode: document.getElementById('lobby-flash-mode')
+        };
+
+        // Application initializations
+        function initApp() {
+            if (!State.nickname) {
+                State.nickname = `Clasher_${Math.floor(1000 + Math.random() * 9000)}`;
+            }
+            DOM.playerNickname.value = State.nickname;
+
+            // Render Avatar Colors Selection Panel
+            DOM.avatarColorGrid.innerHTML = '';
+            AVATAR_COLORS.forEach((color, idx) => {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = `h-10 rounded-xl transition-all relative border-2 ${color.class} ${State.avatarColorIdx === idx ? 'border-white scale-105 ring-2 ring-violet-500/30' : 'border-transparent opacity-80 hover:opacity-100 hover:scale-102'}`;
+                btn.title = color.name;
+                btn.onclick = () => selectAvatarColor(idx);
+                
+                if (State.avatarColorIdx === idx) {
+                    btn.innerHTML = `<span class="absolute inset-0 flex items-center justify-center"><i data-lucide="check" class="w-5 h-5 text-white"></i></span>`;
+                }
+                DOM.avatarColorGrid.appendChild(btn);
+            });
+            lucide.createIcons();
+
+            // Match URL configuration parameters directly
+            const params = new URLSearchParams(window.location.search);
+            const activeRoomParam = params.get('room');
+            if (activeRoomParam) {
+                DOM.inputRoomId.value = activeRoomParam;
+                DOM.joinInputArea.classList.remove('hidden');
+                DOM.inputRoomId.focus();
+            }
+
+            attachEventListeners();
+            AudioFX.init();
+        }
+
+        function selectAvatarColor(idx) {
+            State.avatarColorIdx = idx;
+            localStorage.setItem('typeclash_avatar_idx', idx);
+            initApp();
+        }
+
+        function syncNickname() {
+            const raw = DOM.playerNickname.value.trim();
+            State.nickname = raw ? raw.substring(0, 15) : "UnknownClasher";
+            localStorage.setItem('typeclash_name', State.nickname);
+        }
+
+        function attachEventListeners() {
+            DOM.playerNickname.addEventListener('input', syncNickname);
+
+            // Sync Main Lobby Configuration selections with Multiplayer Lobby selections
+            DOM.configLanguage.addEventListener('change', () => {
+                DOM.lobbySelectLanguage.value = DOM.configLanguage.value;
+                State.targetLanguage = DOM.configLanguage.value;
+            });
+            DOM.configDifficulty.addEventListener('change', () => {
+                DOM.lobbySelectDifficulty.value = DOM.configDifficulty.value;
+                State.targetDifficulty = DOM.configDifficulty.value;
+            });
+            DOM.configFlashMode.addEventListener('change', () => {
+                DOM.lobbyFlashMode.checked = DOM.configFlashMode.checked;
+                State.flashMode = DOM.configFlashMode.checked;
+            });
+
+            DOM.lobbySelectLanguage.addEventListener('change', () => {
+                DOM.configLanguage.value = DOM.lobbySelectLanguage.value;
+                State.targetLanguage = DOM.lobbySelectLanguage.value;
+                if (State.isHost) broadcastLobbyConfig();
+            });
+            DOM.lobbySelectDifficulty.addEventListener('change', () => {
+                DOM.configDifficulty.value = DOM.lobbySelectDifficulty.value;
+                State.targetDifficulty = DOM.lobbySelectDifficulty.value;
+                if (State.isHost) broadcastLobbyConfig();
+            });
+            DOM.lobbyFlashMode.addEventListener('change', () => {
+                DOM.configFlashMode.checked = DOM.lobbyFlashMode.checked;
+                State.flashMode = DOM.lobbyFlashMode.checked;
+                if (State.isHost) broadcastLobbyConfig();
+            });
+
+            // Audio FX Toggle controller
+            DOM.audioToggleBtn.addEventListener('click', () => {
+                const active = AudioFX.toggle();
+                if (active) {
+                    DOM.audioIcon.setAttribute('data-lucide', 'volume-2');
+                    DOM.audioIcon.classList.remove('text-rose-400');
+                    DOM.audioIcon.classList.add('text-gray-400');
+                } else {
+                    DOM.audioIcon.setAttribute('data-lucide', 'volume-x');
+                    DOM.audioIcon.classList.add('text-rose-400');
+                    DOM.audioIcon.classList.remove('text-gray-400');
+                }
+                lucide.createIcons();
+            });
+
+            // Navigation trigger binding actions
+            DOM.btnSoloPractice.addEventListener('click', () => {
+                syncNickname();
+                startSoloPractice();
+            });
+
+            DOM.btnCreateLobby.addEventListener('click', () => {
+                syncNickname();
+                hostMultiplayerLobby();
+            });
+
+            DOM.btnJoinLobbyToggle.addEventListener('click', () => {
+                DOM.joinInputArea.classList.toggle('hidden');
+            });
+
+            DOM.btnSubmitJoin.addEventListener('click', () => {
+                syncNickname();
+                const inputId = DOM.inputRoomId.value.trim();
+                if (inputId) joinMultiplayerLobby(inputId);
+            });
+
+            DOM.btnDisconnectLobby.addEventListener('click', disconnectNetwork);
+            DOM.btnAbortMatch.addEventListener('click', abortActiveMatch);
+            DOM.btnResultsReturn.addEventListener('click', returnToLobbyFromResults);
+            DOM.btnResultsPlayAgain.addEventListener('click', playAgainTrigger);
+            DOM.btnCopyInvite.addEventListener('click', copyInviteLinkToClipboard);
+
+            DOM.btnHostStartClash.addEventListener('click', () => {
+                if (State.isHost) triggerGameStartSequence();
+            });
+
+            // Block paste commands
+            DOM.gameTypingInput.addEventListener('paste', (e) => e.preventDefault());
+
+            // Global Keyboard Shortcuts Mapper
+            window.addEventListener('keydown', (e) => {
+                // Return to lobby via Escape
+                if (e.key === 'Escape') {
+                    if (State.gameState === 'PLAYING' || State.gameState === 'COUNTDOWN') {
+                        abortActiveMatch();
+                    } else if (State.gameState === 'RESULTS') {
+                        returnToLobbyFromResults();
+                    }
+                }
+
+                // Shift+Enter to quick start solo mode or quick-replay
+                if (e.key === 'Enter' && e.shiftKey) {
+                    e.preventDefault();
+                    if (State.gameState === 'LOBBY' && document.getElementById('screen-lobby').classList.contains('hidden') === false) {
+                        syncNickname();
+                        startSoloPractice();
+                    } else if (State.gameState === 'RESULTS') {
+                        playAgainTrigger();
+                    }
+                }
+            });
+        }
+
+        // ================= CLIENT P2P NETWORKING (WebRTC / PeerJS) =================
+
+        function setConnectionStatus(status, isError = false) {
+            DOM.connectionStatus.textContent = status;
+            if (isError) {
+                DOM.statusIndicator.className = "h-2 w-2 rounded-full bg-rose-500 animate-pulse";
+                DOM.connectionStatus.className = "text-rose-400 font-mono";
+            } else {
+                DOM.statusIndicator.className = "h-2 w-2 rounded-full bg-cyan-500 animate-pulse";
+                DOM.connectionStatus.className = "text-cyan-400 font-mono";
+            }
+        }
+
+        function initializePeer(onOpenCallback) {
+            if (State.peer) {
+                onOpenCallback();
+                return;
+            }
+
+            setConnectionStatus("LINKING...");
+            State.peer = new Peer(null, { debug: 1 });
+
+            State.peer.on('open', (id) => {
+                State.roomId = id;
+                setConnectionStatus("ONLINE");
+                onOpenCallback();
+            });
+
+            State.peer.on('error', (err) => {
+                console.error("PeerJS exception: ", err);
+                setConnectionStatus("ERR NETWORK", true);
+                alertPopup(`Network interface exception: ${err.type || 'Connection aborted'}`);
+            });
+
+            State.peer.on('close', () => {
+                setConnectionStatus("STANDBY", true);
+            });
+        }
+
+        function hostMultiplayerLobby() {
+            initializePeer(() => {
+                State.isHost = true;
+                State.gameMode = 'MULTIPLAYER';
+                State.connections = [];
+
+                DOM.badgeHostGuest.textContent = "HOST";
+                DOM.badgeHostGuest.className = "px-3 py-1 rounded-lg text-xs font-semibold font-mono bg-amber-500/10 text-amber-400 border border-amber-500/20";
+                
+                DOM.lobbySelectLanguage.disabled = false;
+                DOM.lobbySelectDifficulty.disabled = false;
+                DOM.lobbyFlashMode.disabled = false;
+                DOM.btnHostStartClash.style.display = "inline-flex";
+
+                const roomUrl = `${window.location.origin}${window.location.pathname}?room=${State.roomId}`;
+                DOM.inviteRoomIdBox.value = roomUrl;
+
+                switchScreen('screen-multiplayer-lobby');
+                updateRosterUI();
+
+                State.peer.on('connection', (conn) => {
+                    setupHostListeners(conn);
+                });
+            });
+        }
+
+        function setupHostListeners(conn) {
+            conn.on('open', () => {
+                const newPlayer = {
+                    peerId: conn.peer,
+                    conn: conn,
+                    nickname: "Linking competitor...",
+                    colorClass: AVATAR_COLORS[0].class,
+                    colorHex: AVATAR_COLORS[0].hex,
+                    wpm: 0,
+                    cpm: 0,
+                    progress: 0,
+                    finished: false,
+                    accuracy: 100,
+                    timeSpent: 0
+                };
+                State.connections.push(newPlayer);
+                
+                conn.send({
+                    type: 'HANDSHAKE_REQUEST',
+                    hostSettings: {
+                        lang: State.targetLanguage,
+                        diff: State.targetDifficulty,
+                        flash: State.flashMode
+                    }
+                });
+            });
+
+            conn.on('data', (data) => {
+                handleHostReceivedPayload(conn.peer, data);
+            });
+
+            conn.on('close', () => {
+                removePeerFromRoster(conn.peer);
+            });
+
+            conn.on('error', () => {
+                removePeerFromRoster(conn.peer);
+            });
+        }
+
+        function removePeerFromRoster(peerId) {
+            State.connections = State.connections.filter(c => c.peerId !== peerId);
+            updateRosterUI();
+            
+            if (State.gameState === 'PLAYING') {
+                updateLocalLeaderboardArray();
+                broadcastLeaderboardUpdate();
+                renderRaceTracks();
+                checkAllPlayersCompleted();
+            } else {
+                broadcastRosterToPeers();
+            }
+        }
+
+        function joinMultiplayerLobby(targetRoomId) {
+            initializePeer(() => {
+                State.isHost = false;
+                State.gameMode = 'MULTIPLAYER';
+                
+                setConnectionStatus("ROUTING...");
+                const conn = State.peer.connect(targetRoomId);
+                State.activeConn = conn;
+
+                conn.on('open', () => {
+                    setConnectionStatus("CONNECTED");
+                    DOM.badgeHostGuest.textContent = "COMPETITOR";
+                    DOM.badgeHostGuest.className = "px-3 py-1 rounded-lg text-xs font-semibold font-mono bg-cyan-500/10 text-cyan-400 border border-cyan-500/20";
+                    
+                    DOM.lobbySelectLanguage.disabled = true;
+                    DOM.lobbySelectDifficulty.disabled = true;
+                    DOM.lobbyFlashMode.disabled = true;
+                    DOM.btnHostStartClash.style.display = "none";
+
+                    const roomUrl = `${window.location.origin}${window.location.pathname}?room=${targetRoomId}`;
+                    DOM.inviteRoomIdBox.value = roomUrl;
+
+                    switchScreen('screen-multiplayer-lobby');
+                });
+
+                conn.on('data', (data) => {
+                    handleGuestReceivedPayload(data);
+                });
+
+                conn.on('close', () => {
+                    setConnectionStatus("STANDBY");
+                    alertPopup("Host disconnected the room. Returning to lobby.");
+                    disconnectNetwork();
+                });
+
+                conn.on('error', () => {
+                    setConnectionStatus("ERR TERMINAL", true);
+                    alertPopup("Could not connect to the remote lobby room.");
+                });
+            });
+        }
+
+        function handleHostReceivedPayload(peerId, data) {
+            const player = State.connections.find(p => p.peerId === peerId);
+            if (!player) return;
+
+            switch(data.type) {
+                case 'HANDSHAKE_RESPONSE':
+                    player.nickname = data.nickname;
+                    player.colorClass = data.colorClass;
+                    player.colorHex = data.colorHex;
+                    updateRosterUI();
+                    broadcastRosterToPeers();
+                    break;
+                case 'PROGRESS_UPDATE':
+                    player.progress = data.progress;
+                    player.wpm = data.wpm;
+                    player.cpm = data.cpm;
+                    player.finished = data.finished;
+                    player.accuracy = data.accuracy;
+                    player.timeSpent = data.timeSpent;
+                    
+                    updateLocalLeaderboardArray();
+                    broadcastLeaderboardUpdate();
+                    renderRaceTracks();
+                    checkAllPlayersCompleted();
+                    break;
+            }
+        }
+
+        function handleGuestReceivedPayload(data) {
+            switch(data.type) {
+                case 'HANDSHAKE_REQUEST':
+                    const myCol = AVATAR_COLORS[State.avatarColorIdx];
+                    State.activeConn.send({
+                        type: 'HANDSHAKE_RESPONSE',
+                        nickname: State.nickname,
+                        colorClass: myCol.class,
+                        colorHex: myCol.hex
+                    });
+                    
+                    DOM.lobbySelectLanguage.value = data.hostSettings.lang;
+                    DOM.lobbySelectDifficulty.value = data.hostSettings.diff;
+                    DOM.lobbyFlashMode.checked = data.hostSettings.flash;
+                    
+                    DOM.configLanguage.value = data.hostSettings.lang;
+                    DOM.configDifficulty.value = data.hostSettings.diff;
+                    DOM.configFlashMode.checked = data.hostSettings.flash;
+
+                    State.targetLanguage = data.hostSettings.lang;
+                    State.targetDifficulty = data.hostSettings.diff;
+                    State.flashMode = data.hostSettings.flash;
+                    break;
+
+                case 'LOBBY_CONFIG_UPDATE':
+                    DOM.lobbySelectLanguage.value = data.lang;
+                    DOM.lobbySelectDifficulty.value = data.diff;
+                    DOM.lobbyFlashMode.checked = data.flash;
+
+                    DOM.configLanguage.value = data.lang;
+                    DOM.configDifficulty.value = data.diff;
+                    DOM.configFlashMode.checked = data.flash;
+
+                    State.targetLanguage = data.lang;
+                    State.targetDifficulty = data.diff;
+                    State.flashMode = data.flash;
+                    break;
+
+                case 'ROSTER_UPDATE':
+                    renderGuestRoster(data.roster);
+                    break;
+
+                case 'START_GAME_TRIGGER':
+                    State.targetSentence = data.sentence;
+                    State.targetLanguage = data.lang;
+                    State.targetDifficulty = data.diff;
+                    State.flashMode = data.flash;
+                    setupClashGameArena();
+                    break;
+
+                case 'LEADERBOARD_UPDATE':
+                    State.leaderboard = data.leaderboard;
+                    renderRaceTracks();
+                    break;
+
+                case 'FORCE_END_GAME':
+                    cleanupActiveGameSession();
+                    switchScreen('screen-multiplayer-lobby');
+                    alertPopup("Active match terminated by Host.");
+                    break;
+            }
+        }
+
+        function broadcastRosterToPeers() {
+            const roster = State.connections.map(p => ({
+                nickname: p.nickname,
+                colorClass: p.colorClass
+            }));
+            
+            const hostColor = AVATAR_COLORS[State.avatarColorIdx];
+            roster.unshift({
+                nickname: State.nickname + " (Host)",
+                colorClass: hostColor.class
+            });
+
+            State.connections.forEach(p => {
+                p.conn.send({
+                    type: 'ROSTER_UPDATE',
+                    roster: roster
+                });
+            });
+        }
+
+        function broadcastLobbyConfig() {
+            State.connections.forEach(p => {
+                p.conn.send({
+                    type: 'LOBBY_CONFIG_UPDATE',
+                    lang: State.targetLanguage,
+                    diff: State.targetDifficulty,
+                    flash: State.flashMode
+                });
+            });
+        }
+
+        function broadcastLeaderboardUpdate() {
+            State.connections.forEach(p => {
+                p.conn.send({
+                    type: 'LEADERBOARD_UPDATE',
+                    leaderboard: State.leaderboard
+                });
+            });
+        }
+
+        function broadcastForceEnd() {
+            State.connections.forEach(p => {
+                p.conn.send({ type: 'FORCE_END_GAME' });
+            });
+        }
+
+        // ================= UI RENDERING LOGIC =================
+
+        function switchScreen(screenId) {
+            const screens = [DOM.screenLobby, DOM.screenMultiplayerLobby, DOM.screenGameArena, DOM.screenGameResults];
+            screens.forEach(s => s.classList.add('hidden'));
+            document.getElementById(screenId).classList.remove('hidden');
+        }
+
+        function updateRosterUI() {
+            DOM.lobbyPlayerList.innerHTML = '';
+            const hostCol = AVATAR_COLORS[State.avatarColorIdx];
+            addPlayerToRosterUIList(State.nickname, hostCol.class, true);
+
+            State.connections.forEach(p => {
+                addPlayerToRosterUIList(p.nickname, p.colorClass, false);
+            });
+        }
+
+        function addPlayerToRosterUIList(name, colorClass, isHost) {
+            const card = document.createElement('div');
+            card.className = "flex items-center justify-between p-3 rounded-xl bg-gray-900/50 border border-gray-900 hover:border-gray-800 transition-colors";
+            card.innerHTML = `
+                <div class="flex items-center gap-3">
+                    <div class="w-3.5 h-3.5 rounded-full ${colorClass}"></div>
+                    <span class="text-xs font-semibold text-white font-mono">${name}</span>
+                </div>
+                ${isHost ? `<span class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20 uppercase font-mono">HOST</span>` : `<span class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 uppercase font-mono">PEER</span>`}
+            `;
+            DOM.lobbyPlayerList.appendChild(card);
+        }
+
+        function renderGuestRoster(rosterList) {
+            DOM.lobbyPlayerList.innerHTML = '';
+            rosterList.forEach(player => {
+                const card = document.createElement('div');
+                card.className = "flex items-center gap-3 p-3 rounded-xl bg-gray-900/50 border border-gray-900";
+                card.innerHTML = `
+                    <div class="w-3.5 h-3.5 rounded-full ${player.colorClass}"></div>
+                    <span class="text-xs font-semibold text-white font-mono">${player.nickname}</span>
+                `;
+                DOM.lobbyPlayerList.appendChild(card);
+            });
+        }
+
+        function copyInviteLinkToClipboard() {
+            DOM.inviteRoomIdBox.select();
+            DOM.inviteRoomIdBox.setSelectionRange(0, 99999);
+            document.execCommand('copy');
+            
+            const orig = DOM.btnCopyInvite.innerHTML;
+            DOM.btnCopyInvite.innerHTML = `<i data-lucide="check" class="w-3.5 h-3.5 text-emerald-400"></i><span class="text-emerald-400">Copied!</span>`;
+            lucide.createIcons();
+            setTimeout(() => {
+                DOM.btnCopyInvite.innerHTML = orig;
+                lucide.createIcons();
+            }, 1800);
+        }
+
+        function disconnectNetwork() {
+            cleanupActiveGameSession();
+            if (State.isHost) broadcastForceEnd();
+
+            if (State.peer) {
+                State.peer.destroy();
+                State.peer = null;
+            }
+            State.connections = [];
+            State.activeConn = null;
+            State.isHost = false;
+            State.gameMode = 'SOLO';
+            setConnectionStatus("STANDBY");
+            
+            const url = new URL(window.location);
+            url.searchParams.delete('room');
+            window.history.pushState({}, '', url);
+
+            switchScreen('screen-lobby');
+        }
+
+        function alertPopup(msg) {
+            const modal = document.createElement('div');
+            modal.className = "fixed inset-0 bg-gray-950/80 backdrop-blur-sm z-[999] flex items-center justify-center p-4";
+            modal.innerHTML = `
+                <div class="bg-gray-900 border border-gray-800 rounded-2xl max-w-sm w-full p-6 text-center space-y-4 shadow-2xl font-mono">
+                    <div class="w-10 h-10 rounded-full bg-violet-500/10 text-violet-400 flex items-center justify-center mx-auto border border-violet-500/20">
+                        <i data-lucide="alert-circle" class="w-5 h-5"></i>
+                    </div>
+                    <p class="text-xs font-medium text-gray-200 leading-relaxed">${msg}</p>
+                    <button class="w-full py-2 bg-violet-600 hover:bg-violet-500 text-white font-bold rounded-xl transition-colors text-xs uppercase tracking-wider">Acknowledge</button>
+                </div>
+            `;
+            document.body.appendChild(modal);
+            lucide.createIcons();
+            
+            modal.querySelector('button').onclick = () => modal.remove();
+        }
+
+        // ================= GAMEPLAY ENGINE LOGIC =================
+
+        // Duplicate Sentence Prevention & Selection Pool
+        function getRandomSentence(lang, diff) {
+            const pool = DICTIONARIES[lang][diff];
+            const unplayed = pool.filter(sentence => !State.playedSentences.includes(sentence));
+            
+            if (unplayed.length === 0) {
+                // Clear state tracking record once fully exhausted
+                State.playedSentences = State.playedSentences.filter(s => !pool.includes(s));
+                return pool[Math.floor(Math.random() * pool.length)];
+            }
+            
+            const chosen = unplayed[Math.floor(Math.random() * unplayed.length)];
+            State.playedSentences.push(chosen);
+            return chosen;
+        }
+
+        function sanitizeSentenceForFlashMode(str) {
+            return str
+                .toLowerCase()
+                // Keep only Hangul syllables, Hangul Compatibility Jamos, basic alphanumeric characters, and single spacing
+                .replace(/[^a-zA-Z0-9\uAC00-\uD7A3\u3131-\u3163\s]/g, "")
+                .replace(/\s+/g, " ")
+                .trim();
+        }
+
+        function startSoloPractice() {
+            State.gameMode = 'SOLO';
+            State.isHost = false;
+            
+            State.targetLanguage = DOM.configLanguage.value;
+            State.targetDifficulty = DOM.configDifficulty.value;
+            State.flashMode = DOM.configFlashMode.checked;
+            
+            let sentence = getRandomSentence(State.targetLanguage, State.targetDifficulty);
+            if (State.flashMode) {
+                sentence = sanitizeSentenceForFlashMode(sentence);
+            }
+            State.targetSentence = sentence;
+
+            setupClashGameArena();
+        }
+
+        function setupClashGameArena() {
+            State.gameState = 'LOBBY';
+            cleanupActiveGameSession();
+            
+            DOM.statWpm.textContent = "0";
+            DOM.statCpm.textContent = "0";
+            DOM.statAccuracy.textContent = "100%";
+            DOM.statTime.textContent = "00:00";
+            DOM.gameDifficultyBadge.textContent = `${State.targetLanguage.toUpperCase()} - ${State.targetDifficulty.toUpperCase()}`;
+
+            if (State.flashMode) {
+                DOM.flashBadgeIndicator.classList.remove('hidden');
+            } else {
+                DOM.flashBadgeIndicator.classList.add('hidden');
+            }
+
+            if (State.targetLanguage === 'ko') {
+                DOM.imeIndicator.classList.remove('hidden');
+            } else {
+                DOM.imeIndicator.classList.add('hidden');
+            }
+
+            renderTargetDisplayString("");
+
+            State.localStats = {
+                charsTyped: 0,
+                correctChars: 0,
+                errorsCount: 0,
+                wpm: 0,
+                cpm: 0,
+                accuracy: 100,
+                progress: 0,
+                finished: false,
+                rank: null,
+                timeSpent: 0
+            };
+
+            // Re-bind textarea length limit parameters dynamically
+            DOM.gameTypingInput.maxLength = State.targetSentence.length;
+            DOM.gameTypingInput.value = "";
+            DOM.gameTypingInput.disabled = true;
+
+            updateLocalLeaderboardArray();
+            renderRaceTracks();
+            switchScreen('screen-game-arena');
+
+            startCountdown(() => {
+                DOM.gameTypingInput.disabled = false;
+                DOM.gameTypingInput.focus();
+                State.gameState = 'PLAYING';
+                AudioFX.playStart();
+                // Timer remains at 00:00 until first keypress
+                State.startTime = null;
+            });
+        }
+
+        function startCountdown(onComplete) {
+            DOM.countdownOverlay.classList.remove('hidden');
+            let count = 3;
+            DOM.countdownTimerNum.textContent = count;
+            DOM.countdownTimerNum.className = "text-8xl font-black font-mono bg-gradient-to-tr from-violet-400 via-fuchsia-400 to-cyan-400 bg-clip-text text-transparent transform scale-50 transition-all duration-300";
+            
+            setTimeout(() => {
+                DOM.countdownTimerNum.className = "text-8xl font-black font-mono bg-gradient-to-tr from-violet-400 via-fuchsia-400 to-cyan-400 bg-clip-text text-transparent transform scale-100 transition-all duration-300";
+            }, 10);
+
+            AudioFX.playCountdown();
+
+            const interval = setInterval(() => {
+                count--;
+                if (count > 0) {
+                    DOM.countdownTimerNum.textContent = count;
+                    AudioFX.playCountdown();
+                } else {
+                    clearInterval(interval);
+                    DOM.countdownOverlay.classList.add('hidden');
+                    onComplete();
+                }
+            }, 1000);
+        }
+
+        function gameLoopClockTick() {
+            if (State.gameState !== 'PLAYING' || !State.startTime) return;
+
+            const now = Date.now();
+            State.timeElapsed = Math.max(0, (now - State.startTime) / 1000);
+            
+            const mins = Math.floor(State.timeElapsed / 60);
+            const secs = Math.floor(State.timeElapsed % 60);
+            DOM.statTime.textContent = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+
+            recalculateTypingMetrics();
+
+            if (State.gameMode === 'MULTIPLAYER') {
+                sendProgressToPeerNetwork();
+            }
+        }
+
+        // Deconstruct matching parameters between target sentence strings and entered keys
+        function evaluateMatchState(typed, target) {
+            let states = new Array(target.length).fill('untyped');
+            let tIdx = 0;
+            let uIdx = 0;
+
+            while (uIdx < typed.length && tIdx < target.length) {
+                let uc = typed[uIdx];
+                let tc = target[tIdx];
+
+                if (uc === tc) {
+                    states[tIdx] = 'correct';
+                    tIdx++;
+                    uIdx++;
+                } else {
+                    const isLastTypedChar = (uIdx === typed.length - 1);
+
+                    if (isLastTypedChar) {
+                        if (isKoreanPartialMatch(uc, tc)) {
+                            // Deemed correct intermediate composition
+                            states[tIdx] = 'current';
+                            tIdx++;
+                            uIdx++;
+                        } else if (tIdx + 1 < target.length && isHangulCarryover(uc, tc, target[tIdx + 1])) {
+                            // Accept carryover transition
+                            states[tIdx] = 'correct';
+                            states[tIdx + 1] = 'current';
+                            tIdx += 2;
+                            uIdx++;
+                        } else {
+                            states[tIdx] = 'incorrect';
+                            tIdx++;
+                            uIdx++;
+                        }
+                    } else {
+                        states[tIdx] = 'incorrect';
+                        tIdx++;
+                        uIdx++;
+                    }
+                }
+            }
+
+            if (tIdx < target.length && !states.includes('current')) {
+                states[tIdx] = 'current';
+            }
+
+            return { states, lastCompletedIdx: tIdx - 1 };
+        }
+
+        // Calculate Korean CPM speed using correct raw Jamo keystrokes typed
+        function calculateCorrectStrokes(typed, target, states) {
+            let strokes = 0;
+            for (let i = 0; i < target.length; i++) {
+                if (states[i] === 'correct') {
+                    const decomp = decomposeHangul(target[i]);
+                    strokes += decomp.length > 0 ? decomp.length : 1;
+                } else if (states[i] === 'current' && i < typed.length) {
+                    const typedDecomp = decomposeHangul(typed[i]);
+                    const targetDecomp = decomposeHangul(target[i]);
+                    let matches = 0;
+                    for (let j = 0; j < Math.min(typedDecomp.length, targetDecomp.length); j++) {
+                        if (typedDecomp[j] === targetDecomp[j]) matches++;
+                    }
+                    strokes += matches;
+                }
+            }
+            return strokes;
+        }
+
+        function recalculateTypingMetrics() {
+            const raw = DOM.gameTypingInput.value;
+            const target = State.targetSentence;
+
+            const { states } = evaluateMatchState(raw, target);
+
+            // Compute Stroke-level character match criteria
+            let correctStrokes = 0;
+            let currentErrors = 0;
+
+            for (let i = 0; i < raw.length; i++) {
+                if (states[i] === 'correct') {
+                    const decomp = decomposeHangul(target[i]);
+                    correctStrokes += decomp.length > 0 ? decomp.length : 1;
+                } else if (states[i] === 'current') {
+                    const typedDecomp = decomposeHangul(raw[i]);
+                    const targetDecomp = decomposeHangul(target[i]);
+                    let matches = 0;
+                    for (let j = 0; j < Math.min(typedDecomp.length, targetDecomp.length); j++) {
+                        if (typedDecomp[j] === targetDecomp[j]) matches++;
+                    }
+                    correctStrokes += matches;
+                } else if (states[i] === 'incorrect') {
+                    currentErrors++;
+                }
+            }
+
+            State.localStats.charsTyped = raw.length;
+            
+            // Standardizing time elapsed variables
+            const minUnit = State.timeElapsed / 60 || 0.001;
+            
+            // Dynamic character calculation
+            if (State.targetLanguage === 'ko') {
+                State.localStats.cpm = Math.round(correctStrokes / minUnit);
+                State.localStats.wpm = Math.round((correctStrokes / 5) / minUnit);
+            } else {
+                // English / German: Keystroke length calculations
+                const totalTargetStrokes = target.substring(0, raw.length).length;
+                const correctCharLength = Math.max(0, raw.length - currentErrors);
+                State.localStats.cpm = Math.round(correctCharLength / minUnit);
+                State.localStats.wpm = Math.round((correctCharLength / 5) / minUnit);
+            }
+
+            if (raw.length > 0) {
+                State.localStats.accuracy = Math.round(((raw.length - currentErrors) / raw.length) * 100);
+            } else {
+                State.localStats.accuracy = 100;
+            }
+
+            // Game progress parameters
+            const finishedCharCount = states.filter(s => s === 'correct').length;
+            State.localStats.progress = Math.min(100, Math.round((finishedCharCount / target.length) * 100));
+
+            DOM.statWpm.textContent = State.localStats.wpm;
+            DOM.statCpm.textContent = State.localStats.cpm;
+            DOM.statAccuracy.textContent = `${State.localStats.accuracy}%`;
+
+            renderTargetDisplayString(raw);
+
+            // Safe Completion Rules: Input matches target length AND composition of last char is finished
+            const lastState = states[target.length - 1];
+            const isLastCommitted = (lastState === 'correct' || lastState === 'incorrect');
+            if (raw.length >= target.length && isLastCommitted && !State.localStats.finished) {
+                handleLocalPlayerCompletion();
+            }
+        }
+
+        // Typing inputs triggers
+        DOM.gameTypingInput.addEventListener('input', () => {
+            if (State.gameState !== 'PLAYING') return;
+
+            // Trigger timer immediately on absolute first keystroke
+            if (!State.startTime) {
+                State.startTime = Date.now();
+                State.timerInterval = setInterval(gameLoopClockTick, 250);
+            }
+
+            AudioFX.playClick();
+            recalculateTypingMetrics();
+
+            if (State.gameMode === 'MULTIPLAYER') {
+                sendProgressToPeerNetwork();
+            }
+        });
+
+        // Typing auditory responses
+        DOM.gameTypingInput.addEventListener('keydown', (e) => {
+            if (State.gameState !== 'PLAYING') return;
+
+            setTimeout(() => {
+                const raw = DOM.gameTypingInput.value;
+                const target = State.targetSentence;
+                const { states } = evaluateMatchState(raw, target);
+                
+                const activeIdx = raw.length - 1;
+                if (activeIdx >= 0 && states[activeIdx] === 'incorrect') {
+                    AudioFX.playError();
+                }
+            }, 10);
+        });
+
+        // Highlighter renderer (No underlines!)
+        function renderTargetDisplayString(currentTyped) {
+            const target = State.targetSentence;
+            const container = DOM.sentenceDisplayBox;
+            container.innerHTML = '';
+
+            const { states } = evaluateMatchState(currentTyped, target);
+
+            for (let i = 0; i < target.length; i++) {
+                const span = document.createElement('span');
+                const char = target[i];
+                span.className = `char-${states[i]}`;
+
+                if (char === ' ') {
+                    span.innerHTML = ' '; // Visual wrapper for native wrapping breaks
+                } else {
+                    span.textContent = char;
+                }
+                container.appendChild(span);
+            }
+        }
+
+        function handleLocalPlayerCompletion() {
+            State.localStats.finished = true;
+            State.localStats.timeSpent = State.timeElapsed;
+            clearInterval(State.timerInterval);
+            
+            DOM.gameTypingInput.disabled = true;
+            AudioFX.playChime();
+
+            if (State.gameMode === 'MULTIPLAYER') {
+                sendProgressToPeerNetwork();
+                if (State.isHost) {
+                    updateLocalLeaderboardArray();
+                    broadcastLeaderboardUpdate();
+                    checkAllPlayersCompleted();
+                }
+            } else {
+                showMatchResults();
+            }
+        }
+
+        function sendProgressToPeerNetwork() {
+            const payload = {
+                type: 'PROGRESS_UPDATE',
+                progress: State.localStats.progress,
+                wpm: State.localStats.wpm,
+                cpm: State.localStats.cpm,
+                accuracy: State.localStats.accuracy,
+                finished: State.localStats.finished,
+                timeSpent: State.localStats.timeSpent
+            };
+
+            if (State.isHost) {
+                updateHostTrackEntry(State.peer.id, payload);
+                updateLocalLeaderboardArray();
+                broadcastLeaderboardUpdate();
+                renderRaceTracks();
+            } else if (State.activeConn) {
+                State.activeConn.send(payload);
+            }
+        }
+
+        function updateHostTrackEntry(hostId, stats) {
+            const hostIdx = State.connections.findIndex(p => p.peerId === hostId);
+            const myCol = AVATAR_COLORS[State.avatarColorIdx];
+            
+            const entry = {
+                peerId: hostId,
+                nickname: State.nickname,
+                colorClass: myCol.class,
+                colorHex: myCol.hex,
+                progress: stats.progress,
+                wpm: stats.wpm,
+                cpm: stats.cpm,
+                accuracy: stats.accuracy,
+                finished: stats.finished,
+                timeSpent: stats.timeSpent
+            };
+
+            if (hostIdx === -1) {
+                State.connections.push(entry);
+            } else {
+                State.connections[hostIdx] = { ...State.connections[hostIdx], ...entry };
+            }
+        }
+
+        function updateLocalLeaderboardArray() {
+            if (!State.peer) {
+                // Solo protection fallback
+                const myCol = AVATAR_COLORS[State.avatarColorIdx];
+                State.leaderboard = [{
+                    peerId: 'solo',
+                    nickname: State.nickname,
+                    colorClass: myCol.class,
+                    colorHex: myCol.hex,
+                    progress: State.localStats.progress,
+                    wpm: State.localStats.wpm,
+                    cpm: State.localStats.cpm,
+                    accuracy: State.localStats.accuracy,
+                    finished: State.localStats.finished,
+                    timeSpent: State.localStats.timeSpent
+                }];
+                return;
+            }
+
+            const hostColor = AVATAR_COLORS[State.avatarColorIdx];
+            const rawLeaderboard = State.connections.map(p => ({
+                peerId: p.peerId,
+                nickname: p.nickname,
+                colorClass: p.colorClass,
+                colorHex: p.colorHex,
+                progress: p.progress,
+                wpm: p.wpm,
+                cpm: p.cpm,
+                accuracy: p.accuracy,
+                finished: p.finished,
+                timeSpent: p.timeSpent
+            }));
+
+            const hasHost = rawLeaderboard.some(x => x.peerId === State.peer.id);
+            if (!hasHost) {
+                rawLeaderboard.unshift({
+                    peerId: State.peer.id,
+                    nickname: State.nickname,
+                    colorClass: hostColor.class,
+                    colorHex: hostColor.hex,
+                    progress: State.localStats.progress,
+                    wpm: State.localStats.wpm,
+                    cpm: State.localStats.cpm,
+                    accuracy: State.localStats.accuracy,
+                    finished: State.localStats.finished,
+                    timeSpent: State.localStats.timeSpent
+                });
+            }
+
+            rawLeaderboard.sort((a, b) => {
+                if (b.progress !== a.progress) return b.progress - a.progress;
+                return b.wpm - a.wpm;
+            });
+
+            State.leaderboard = rawLeaderboard;
+        }
+
+        function renderRaceTracks() {
+            DOM.raceTracksContainer.innerHTML = '';
+            const list = State.gameMode === 'MULTIPLAYER' ? State.leaderboard : [
+                {
+                    peerId: 'solo',
+                    nickname: State.nickname,
+                    colorClass: AVATAR_COLORS[State.avatarColorIdx].class,
+                    progress: State.localStats.progress,
+                    wpm: State.localStats.wpm,
+                    finished: State.localStats.finished
+                }
+            ];
+
+            list.forEach(player => {
+                const widthPercent = `${player.progress}%`;
+                const track = document.createElement('div');
+                track.className = "space-y-1";
+                track.innerHTML = `
+                    <div class="flex items-center justify-between text-[10px] font-mono">
+                        <span class="text-gray-300 font-semibold flex items-center gap-1.5">
+                            <span class="w-2.5 h-2.5 rounded-full ${player.colorClass}"></span>
+                            ${player.nickname}
+                        </span>
+                        <span class="text-gray-500">
+                            ${player.wpm} WPM • ${player.progress}% ${player.finished ? '<span class="text-emerald-400 font-bold ml-1">FINISH</span>' : ''}
+                        </span>
+                    </div>
+                    <div class="h-3 w-full bg-gray-900 border border-gray-850 rounded-lg overflow-hidden relative flex items-center">
+                        <div class="absolute inset-0 bg-[linear-gradient(to_right,#1f2937_1px,transparent_1px)] bg-[size:10%_100%] opacity-20"></div>
+                        <div class="h-full rounded-r transition-all duration-300 ease-out ${player.colorClass}" style="width: ${widthPercent};"></div>
+                    </div>
+                `;
+                DOM.raceTracksContainer.appendChild(track);
+            });
+        }
+
+        function checkAllPlayersCompleted() {
+            if (!State.isHost) return;
+            const allFinished = State.leaderboard.every(p => p.finished);
+            if (allFinished) {
+                setTimeout(() => showMatchResults(), 1000);
+            }
+        }
+
+        function triggerGameStartSequence() {
+            let sentence = getRandomSentence(State.targetLanguage, State.targetDifficulty);
+            if (State.flashMode) {
+                sentence = sanitizeSentenceForFlashMode(sentence);
+            }
+            State.targetSentence = sentence;
+
+            State.connections.forEach(p => {
+                p.conn.send({
+                    type: 'START_GAME_TRIGGER',
+                    sentence: sentence,
+                    lang: State.targetLanguage,
+                    diff: State.targetDifficulty,
+                    flash: State.flashMode
+                });
+            });
+
+            setupClashGameArena();
+        }
+
+        function showMatchResults() {
+            State.gameState = 'RESULTS';
+            clearInterval(State.timerInterval);
+            updateLocalLeaderboardArray();
+            switchScreen('screen-game-results');
+
+            DOM.podiumContainer.innerHTML = '';
+            const topList = State.gameMode === 'MULTIPLAYER' ? State.leaderboard.slice(0, 3) : [
+                { nickname: State.nickname, wpm: State.localStats.wpm, colorClass: AVATAR_COLORS[State.avatarColorIdx].class }
+            ];
+
+            const reordered = [];
+            if (topList.length === 1) {
+                reordered.push(topList[0]);
+            } else if (topList.length === 2) {
+                reordered.push(topList[1], topList[0]);
+            } else if (topList.length >= 3) {
+                reordered.push(topList[1], topList[0], topList[2]);
+            }
+
+            reordered.forEach(player => {
+                const isFirst = topList[0]?.nickname === player.nickname;
+                const isThird = topList[2]?.nickname === player.nickname;
+
+                let height = "h-20";
+                let badge = "2nd";
+                let border = "border-gray-850 bg-gray-900/50";
+                
+                if (isFirst) {
+                    height = "h-28";
+                    badge = "👑 1st";
+                    border = "border-amber-500/40 bg-amber-950/10";
+                } else if (isThird) {
+                    height = "h-16";
+                    badge = "3rd";
+                    border = "border-orange-500/20 bg-orange-950/10";
+                }
+
+                const pod = document.createElement('div');
+                pod.className = "flex flex-col items-center justify-end font-mono";
+                pod.innerHTML = `
+                    <span class="text-[10px] font-bold text-gray-300 mb-1 truncate max-w-[80px]">${player.nickname}</span>
+                    <span class="text-[10px] text-gray-500 mb-1.5">${player.wpm} WPM</span>
+                    <div class="w-full ${height} ${border} border-t-2 border-x rounded-t-xl flex flex-col items-center justify-center p-2">
+                        <span class="text-[11px] font-extrabold text-white">${badge}</span>
+                        <div class="w-4 h-4 rounded-full ${player.colorClass} mt-2"></div>
+                    </div>
+                `;
+                DOM.podiumContainer.appendChild(pod);
+            });
+
+            DOM.resultsTableBody.innerHTML = '';
+            const list = State.gameMode === 'MULTIPLAYER' ? State.leaderboard : [
+                {
+                    nickname: State.nickname,
+                    wpm: State.localStats.wpm,
+                    cpm: State.localStats.cpm,
+                    accuracy: State.localStats.accuracy,
+                    finished: State.localStats.finished
+                }
+            ];
+
+            list.forEach((p, idx) => {
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-gray-900/10 transition-colors";
+                tr.innerHTML = `
+                    <td class="p-3 font-bold text-gray-500">#${idx + 1}</td>
+                    <td class="p-3 font-semibold text-white">${p.nickname}</td>
+                    <td class="p-3 text-center text-cyan-400 font-bold">${p.wpm}</td>
+                    <td class="p-3 text-center text-violet-400">${p.cpm}</td>
+                    <td class="p-3 text-center text-emerald-400">${p.accuracy}%</td>
+                `;
+                DOM.resultsTableBody.appendChild(tr);
+            });
+
+            if (State.gameMode === 'MULTIPLAYER' && !State.isHost) {
+                DOM.btnResultsPlayAgain.style.display = "none";
+            } else {
+                DOM.btnResultsPlayAgain.style.display = "inline-flex";
+            }
+        }
+
+        function returnToLobbyFromResults() {
+            if (State.gameMode === 'MULTIPLAYER') {
+                switchScreen('screen-multiplayer-lobby');
+                clearMultiplayerRosterProgress();
+                updateRosterUI();
+            } else {
+                switchScreen('screen-lobby');
+            }
+        }
+
+        function playAgainTrigger() {
+            if (State.gameMode === 'MULTIPLAYER' && State.isHost) {
+                clearMultiplayerRosterProgress();
+                triggerGameStartSequence();
+            } else {
+                startSoloPractice();
+            }
+        }
+
+        function clearMultiplayerRosterProgress() {
+            State.connections.forEach(p => {
+                p.progress = 0; p.wpm = 0; p.cpm = 0; p.finished = false; p.accuracy = 100;
+            });
+            State.localStats.progress = 0;
+            State.localStats.wpm = 0;
+            State.localStats.cpm = 0;
+            State.localStats.finished = false;
+            updateLocalLeaderboardArray();
+        }
+
+        function abortActiveMatch() {
+            cleanupActiveGameSession();
+            
+            if (State.gameMode === 'MULTIPLAYER') {
+                switchScreen('screen-multiplayer-lobby');
+                clearMultiplayerRosterProgress();
+                updateRosterUI();
+                
+                if (State.isHost) {
+                    broadcastForceEnd();
+                } else {
+                    disconnectNetwork();
+                }
+            } else {
+                switchScreen('screen-lobby');
+            }
+        }
+
+        function cleanupActiveGameSession() {
+            clearInterval(State.timerInterval);
+            State.gameState = 'LOBBY';
+            DOM.gameTypingInput.disabled = false;
+        }
+
+        window.onload = function() {
+            initApp();
+        };
+
+    </script>
+</body>
+</html>
