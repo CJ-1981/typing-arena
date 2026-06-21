@@ -125,6 +125,63 @@
         .peer:checked ~ .flash-toggle-track {
             background-color: var(--player-color);
         }
+
+        /* === Avatar emoji chips ===
+           Used in roster rows, live tracker, podium, and the lobby preview card.
+           Sizes: sm (roster rows), md (tracker header), lg (podium), xl (preview card). */
+        .avatar-chip {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            line-height: 1;
+            border-radius: 0.5rem;
+            background-color: rgba(var(--player-color-rgb), 0.12);
+            border: 1px solid rgba(var(--player-color-rgb), 0.35);
+            flex-shrink: 0;
+            font-family: 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', 'Plus Jakarta Sans', sans-serif;
+        }
+        .avatar-chip-sm { width: 1.5rem;  height: 1.5rem;  font-size: 0.95rem; }
+        .avatar-chip-md { width: 2rem;    height: 2rem;    font-size: 1.15rem; }
+        .avatar-chip-lg { width: 2.75rem; height: 2.75rem; font-size: 1.6rem;  border-radius: 0.75rem; }
+        .avatar-chip-xl { width: 4rem;    height: 4rem;    font-size: 2.4rem;  border-radius: 1rem; }
+
+        /* Per-color override: when an avatar chip is for an opponent whose
+           color differs from the local player's, we override the chip
+           background/border inline via style attribute. This base class still
+           gives us the layout. */
+
+        /* Emoji picker swatch buttons */
+        .emoji-swatch {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            height: 2.5rem;
+            border-radius: 0.75rem;
+            border: 2px solid transparent;
+            background-color: rgba(255, 255, 255, 0.03);
+            font-size: 1.35rem;
+            line-height: 1;
+            transition: transform 120ms ease, border-color 120ms ease, background-color 120ms ease;
+            font-family: 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', 'Plus Jakarta Sans', sans-serif;
+        }
+        .emoji-swatch:hover {
+            background-color: rgba(255, 255, 255, 0.07);
+            transform: scale(1.08);
+        }
+        .emoji-swatch.is-selected {
+            background-color: rgba(var(--player-color-rgb), 0.18);
+        }
+
+        /* Player preview card (lobby) — shows the chosen emoji + nickname in a chip */
+        .player-preview-card {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem 1rem;
+            border-radius: 0.75rem;
+            background-color: rgba(var(--player-color-rgb), 0.08);
+            border: 1px solid rgba(var(--player-color-rgb), 0.25);
+        }
     </style>
 </head>
 <body class="min-h-screen flex flex-col antialiased">
@@ -192,6 +249,23 @@
                     <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2 font-mono">Avatar Theme Color</label>
                     <div class="grid grid-cols-6 gap-2.5" id="avatar-color-grid">
                         <!-- Loaded dynamically -->
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2 font-mono">Avatar Character</label>
+                    <div class="grid grid-cols-6 gap-2" id="avatar-emoji-grid">
+                        <!-- Loaded dynamically -->
+                    </div>
+                </div>
+
+                <!-- Live player preview card -->
+                <div id="player-preview-card" class="player-preview-card">
+                    <div id="player-preview-emoji" class="avatar-chip avatar-chip-lg">👾</div>
+                    <div class="flex flex-col">
+                        <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider font-mono">You</span>
+                        <span id="player-preview-name" class="text-base font-extrabold text-white truncate max-w-[180px]">UnknownClasher</span>
+                        <span id="player-preview-meta" class="text-[10px] text-gray-400 font-mono">Neon Violet · 👾 Alien</span>
                     </div>
                 </div>
 
@@ -617,6 +691,25 @@
             { name: "Electric Orange", class: "bg-orange-500 shadow-[0_0_15px_rgba(249,115,22,0.5)] text-orange-100",   hex: "#f97316", rgb: "249, 115, 22" }
         ];
 
+        // Arcade-style avatar emojis. 12 picks spanning aliens, robots, animals,
+        // and arcade icons. Stored as just the character + a short name for the
+        // preview card. Order is stable so the index can be persisted in localStorage
+        // and shared over WebRTC alongside the color index.
+        const AVATAR_EMOJIS = [
+            { char: "👾", name: "Alien"   },
+            { char: "🤖", name: "Robot"   },
+            { char: "🦊", name: "Fox"     },
+            { char: "🐧", name: "Penguin" },
+            { char: "🐸", name: "Frog"    },
+            { char: "🦄", name: "Unicorn" },
+            { char: "🐙", name: "Octopus" },
+            { char: "🐯", name: "Tiger"   },
+            { char: "🐵", name: "Monkey"  },
+            { char: "🐉", name: "Dragon"  },
+            { char: "🍄", name: "Mushroom"},
+            { char: "⭐", name: "Star"    }
+        ];
+
         // Web Audio Synthesizer (Zero asset dependency)
         const AudioFX = {
             ctx: null,
@@ -772,6 +865,7 @@
         const State = {
             nickname: localStorage.getItem('typeclash_name') || '',
             avatarColorIdx: parseInt(localStorage.getItem('typeclash_avatar_idx')) || 0,
+            avatarEmojiIdx: parseInt(localStorage.getItem('typeclash_avatar_emoji_idx')) || 0,
             roomId: '',
             peer: null,
             connections: [],
@@ -814,6 +908,10 @@
             
             playerNickname: document.getElementById('player-nickname'),
             avatarColorGrid: document.getElementById('avatar-color-grid'),
+            avatarEmojiGrid: document.getElementById('avatar-emoji-grid'),
+            playerPreviewEmoji: document.getElementById('player-preview-emoji'),
+            playerPreviewName: document.getElementById('player-preview-name'),
+            playerPreviewMeta: document.getElementById('player-preview-meta'),
             
             btnSoloPractice: document.getElementById('btn-solo-practice'),
             btnCreateLobby: document.getElementById('btn-create-lobby'),
@@ -873,6 +971,31 @@
             document.documentElement.style.setProperty('--player-color-rgb', col.rgb);
         }
 
+        function getAvatarEmoji(idx) {
+            const i = (typeof idx === 'number' && !isNaN(idx)) ? idx : State.avatarEmojiIdx;
+            return AVATAR_EMOJIS[i] || AVATAR_EMOJIS[0];
+        }
+
+        // Build an avatar chip HTML string. Used everywhere a player appears:
+        // roster rows, live tracker, podium, results table.
+        // `colorRgb` is the opponent's "r, g, b" string. If omitted, the chip
+        // uses the local player's --player-color-rgb variable (set on :root).
+        function renderAvatarChipHTML(emojiChar, colorRgb, sizeClass) {
+            sizeClass = sizeClass || 'avatar-chip-sm';
+            const bg = colorRgb
+                ? `background-color: rgba(${colorRgb}, 0.12); border-color: rgba(${colorRgb}, 0.35);`
+                : '';
+            return `<span class="avatar-chip ${sizeClass}" style="${bg}">${emojiChar}</span>`;
+        }
+
+        function updatePlayerPreviewCard() {
+            const col = AVATAR_COLORS[State.avatarColorIdx] || AVATAR_COLORS[0];
+            const emoji = getAvatarEmoji();
+            DOM.playerPreviewEmoji.textContent = emoji.char;
+            DOM.playerPreviewName.textContent = State.nickname || 'UnknownClasher';
+            DOM.playerPreviewMeta.textContent = `${col.name} · ${emoji.char} ${emoji.name}`;
+        }
+
         function initApp() {
             if (!State.nickname) {
                 State.nickname = `Clasher_${Math.floor(1000 + Math.random() * 9000)}`;
@@ -896,6 +1019,20 @@
             });
             lucide.createIcons();
 
+            // Render Avatar Emoji Selection Panel
+            DOM.avatarEmojiGrid.innerHTML = '';
+            AVATAR_EMOJIS.forEach((emoji, idx) => {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = `emoji-swatch ${State.avatarEmojiIdx === idx ? 'is-selected player-ring-swatch' : ''}`;
+                btn.title = emoji.name;
+                btn.textContent = emoji.char;
+                btn.onclick = () => selectAvatarEmoji(idx);
+                DOM.avatarEmojiGrid.appendChild(btn);
+            });
+
+            updatePlayerPreviewCard();
+
             // Match URL configuration parameters directly
             const params = new URLSearchParams(window.location.search);
             const activeRoomParam = params.get('room');
@@ -915,10 +1052,17 @@
             initApp();
         }
 
+        function selectAvatarEmoji(idx) {
+            State.avatarEmojiIdx = idx;
+            localStorage.setItem('typeclash_avatar_emoji_idx', idx);
+            initApp();
+        }
+
         function syncNickname() {
             const raw = DOM.playerNickname.value.trim();
             State.nickname = raw ? raw.substring(0, 15) : "UnknownClasher";
             localStorage.setItem('typeclash_name', State.nickname);
+            updatePlayerPreviewCard();
         }
 
         function attachEventListeners() {
@@ -1100,6 +1244,8 @@
                     nickname: "Linking competitor...",
                     colorClass: AVATAR_COLORS[0].class,
                     colorHex: AVATAR_COLORS[0].hex,
+                    colorRgb: AVATAR_COLORS[0].rgb,
+                    avatarEmoji: '👾',
                     wpm: 0,
                     cpm: 0,
                     progress: 0,
@@ -1197,6 +1343,8 @@
                     player.nickname = data.nickname;
                     player.colorClass = data.colorClass;
                     player.colorHex = data.colorHex;
+                    player.colorRgb = data.colorRgb;
+                    player.avatarEmoji = data.avatarEmoji || '👾';
                     updateRosterUI();
                     broadcastRosterToPeers();
                     break;
@@ -1220,11 +1368,14 @@
             switch(data.type) {
                 case 'HANDSHAKE_REQUEST':
                     const myCol = AVATAR_COLORS[State.avatarColorIdx];
+                    const myEmoji = getAvatarEmoji();
                     State.activeConn.send({
                         type: 'HANDSHAKE_RESPONSE',
                         nickname: State.nickname,
                         colorClass: myCol.class,
-                        colorHex: myCol.hex
+                        colorHex: myCol.hex,
+                        colorRgb: myCol.rgb,
+                        avatarEmoji: myEmoji.char
                     });
                     
                     DOM.lobbySelectLanguage.value = data.hostSettings.lang;
@@ -1282,13 +1433,18 @@
         function broadcastRosterToPeers() {
             const roster = State.connections.map(p => ({
                 nickname: p.nickname,
-                colorClass: p.colorClass
+                colorClass: p.colorClass,
+                colorRgb: p.colorRgb,
+                avatarEmoji: p.avatarEmoji || '👾'
             }));
             
             const hostColor = AVATAR_COLORS[State.avatarColorIdx];
+            const hostEmoji = getAvatarEmoji();
             roster.unshift({
                 nickname: State.nickname + " (Host)",
-                colorClass: hostColor.class
+                colorClass: hostColor.class,
+                colorRgb: hostColor.rgb,
+                avatarEmoji: hostEmoji.char
             });
 
             State.connections.forEach(p => {
@@ -1336,19 +1492,20 @@
         function updateRosterUI() {
             DOM.lobbyPlayerList.innerHTML = '';
             const hostCol = AVATAR_COLORS[State.avatarColorIdx];
-            addPlayerToRosterUIList(State.nickname, hostCol.class, true);
+            const hostEmoji = getAvatarEmoji();
+            addPlayerToRosterUIList(State.nickname, hostCol.rgb, hostEmoji.char, true);
 
             State.connections.forEach(p => {
-                addPlayerToRosterUIList(p.nickname, p.colorClass, false);
+                addPlayerToRosterUIList(p.nickname, p.colorRgb, p.avatarEmoji || '👾', false);
             });
         }
 
-        function addPlayerToRosterUIList(name, colorClass, isHost) {
+        function addPlayerToRosterUIList(name, colorRgb, emojiChar, isHost) {
             const card = document.createElement('div');
             card.className = "flex items-center justify-between p-3 rounded-xl bg-gray-900/50 border border-gray-900 hover:border-gray-800 transition-colors";
             card.innerHTML = `
                 <div class="flex items-center gap-3">
-                    <div class="w-3.5 h-3.5 rounded-full ${colorClass}"></div>
+                    ${renderAvatarChipHTML(emojiChar, colorRgb, 'avatar-chip-md')}
                     <span class="text-xs font-semibold text-white font-mono">${name}</span>
                 </div>
                 ${isHost ? `<span class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20 uppercase font-mono">HOST</span>` : `<span class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 uppercase font-mono">PEER</span>`}
@@ -1362,7 +1519,7 @@
                 const card = document.createElement('div');
                 card.className = "flex items-center gap-3 p-3 rounded-xl bg-gray-900/50 border border-gray-900";
                 card.innerHTML = `
-                    <div class="w-3.5 h-3.5 rounded-full ${player.colorClass}"></div>
+                    ${renderAvatarChipHTML(player.avatarEmoji || '👾', player.colorRgb, 'avatar-chip-md')}
                     <span class="text-xs font-semibold text-white font-mono">${player.nickname}</span>
                 `;
                 DOM.lobbyPlayerList.appendChild(card);
@@ -1802,12 +1959,15 @@
         function updateHostTrackEntry(hostId, stats) {
             const hostIdx = State.connections.findIndex(p => p.peerId === hostId);
             const myCol = AVATAR_COLORS[State.avatarColorIdx];
+            const myEmoji = getAvatarEmoji();
             
             const entry = {
                 peerId: hostId,
                 nickname: State.nickname,
                 colorClass: myCol.class,
                 colorHex: myCol.hex,
+                colorRgb: myCol.rgb,
+                avatarEmoji: myEmoji.char,
                 progress: stats.progress,
                 wpm: stats.wpm,
                 cpm: stats.cpm,
@@ -1827,11 +1987,14 @@
             if (!State.peer) {
                 // Solo protection fallback
                 const myCol = AVATAR_COLORS[State.avatarColorIdx];
+                const myEmoji = getAvatarEmoji();
                 State.leaderboard = [{
                     peerId: 'solo',
                     nickname: State.nickname,
                     colorClass: myCol.class,
                     colorHex: myCol.hex,
+                    colorRgb: myCol.rgb,
+                    avatarEmoji: myEmoji.char,
                     progress: State.localStats.progress,
                     wpm: State.localStats.wpm,
                     cpm: State.localStats.cpm,
@@ -1843,11 +2006,14 @@
             }
 
             const hostColor = AVATAR_COLORS[State.avatarColorIdx];
+            const hostEmoji = getAvatarEmoji();
             const rawLeaderboard = State.connections.map(p => ({
                 peerId: p.peerId,
                 nickname: p.nickname,
                 colorClass: p.colorClass,
                 colorHex: p.colorHex,
+                colorRgb: p.colorRgb,
+                avatarEmoji: p.avatarEmoji || '👾',
                 progress: p.progress,
                 wpm: p.wpm,
                 cpm: p.cpm,
@@ -1863,6 +2029,8 @@
                     nickname: State.nickname,
                     colorClass: hostColor.class,
                     colorHex: hostColor.hex,
+                    colorRgb: hostColor.rgb,
+                    avatarEmoji: hostEmoji.char,
                     progress: State.localStats.progress,
                     wpm: State.localStats.wpm,
                     cpm: State.localStats.cpm,
@@ -1887,6 +2055,8 @@
                     peerId: 'solo',
                     nickname: State.nickname,
                     colorClass: AVATAR_COLORS[State.avatarColorIdx].class,
+                    colorRgb: AVATAR_COLORS[State.avatarColorIdx].rgb,
+                    avatarEmoji: getAvatarEmoji().char,
                     progress: State.localStats.progress,
                     wpm: State.localStats.wpm,
                     finished: State.localStats.finished
@@ -1900,7 +2070,7 @@
                 track.innerHTML = `
                     <div class="flex items-center justify-between text-[10px] font-mono">
                         <span class="text-gray-300 font-semibold flex items-center gap-1.5">
-                            <span class="w-2.5 h-2.5 rounded-full ${player.colorClass}"></span>
+                            ${renderAvatarChipHTML(player.avatarEmoji || '👾', player.colorRgb, 'avatar-chip-sm')}
                             ${player.nickname}
                         </span>
                         <span class="text-gray-500">
@@ -1951,8 +2121,10 @@
             switchScreen('screen-game-results');
 
             DOM.podiumContainer.innerHTML = '';
+            const myCol = AVATAR_COLORS[State.avatarColorIdx];
+            const myEmoji = getAvatarEmoji();
             const topList = State.gameMode === 'MULTIPLAYER' ? State.leaderboard.slice(0, 3) : [
-                { nickname: State.nickname, wpm: State.localStats.wpm, colorClass: AVATAR_COLORS[State.avatarColorIdx].class }
+                { nickname: State.nickname, wpm: State.localStats.wpm, colorClass: myCol.class, colorRgb: myCol.rgb, avatarEmoji: myEmoji.char }
             ];
 
             const reordered = [];
@@ -1987,9 +2159,9 @@
                 pod.innerHTML = `
                     <span class="text-[10px] font-bold text-gray-300 mb-1 truncate max-w-[80px]">${player.nickname}</span>
                     <span class="text-[10px] text-gray-500 mb-1.5">${player.wpm} WPM</span>
-                    <div class="w-full ${height} ${border} border-t-2 border-x rounded-t-xl flex flex-col items-center justify-center p-2">
+                    <div class="w-full ${height} ${border} border-t-2 border-x rounded-t-xl flex flex-col items-center justify-center p-2 gap-1.5">
                         <span class="text-[11px] font-extrabold text-white">${badge}</span>
-                        <div class="w-4 h-4 rounded-full ${player.colorClass} mt-2"></div>
+                        ${renderAvatarChipHTML(player.avatarEmoji || '👾', player.colorRgb, 'avatar-chip-lg')}
                     </div>
                 `;
                 DOM.podiumContainer.appendChild(pod);
@@ -2002,7 +2174,9 @@
                     wpm: State.localStats.wpm,
                     cpm: State.localStats.cpm,
                     accuracy: State.localStats.accuracy,
-                    finished: State.localStats.finished
+                    finished: State.localStats.finished,
+                    colorRgb: myCol.rgb,
+                    avatarEmoji: myEmoji.char
                 }
             ];
 
@@ -2011,7 +2185,12 @@
                 tr.className = "hover:bg-gray-900/10 transition-colors";
                 tr.innerHTML = `
                     <td class="p-3 font-bold text-gray-500">#${idx + 1}</td>
-                    <td class="p-3 font-semibold text-white">${p.nickname}</td>
+                    <td class="p-3 font-semibold text-white">
+                        <div class="flex items-center gap-2">
+                            ${renderAvatarChipHTML(p.avatarEmoji || '👾', p.colorRgb, 'avatar-chip-sm')}
+                            <span>${p.nickname}</span>
+                        </div>
+                    </td>
                     <td class="p-3 text-center text-cyan-400 font-bold">${p.wpm}</td>
                     <td class="p-3 text-center text-violet-400">${p.cpm}</td>
                     <td class="p-3 text-center text-emerald-400">${p.accuracy}%</td>
