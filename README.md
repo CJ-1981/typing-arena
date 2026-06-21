@@ -1,5 +1,6 @@
 # ⚡ TypeClash: Real-time Multi-Language Typing Arena
 
+![TypeClash Screenshot](screenshot.png)
 A lightning-fast, peer-to-peer multiplayer typing game built for speed and endurance. TypeClash allows you to practice your typing skills solo or challenge friends in real-time without the need for a dedicated backend server, leveraging the power of WebRTC.
 
 ## 🌟 Features
