@@ -986,7 +986,7 @@
             <!-- Profile Parameters -->
             <div class="space-y-5">
                 <div>
-                    <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2 font-mono">My Nickname</label>
+                    <label for="player-nickname" class="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2 font-mono">My Nickname</label>
                     <div class="relative">
                         <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
                             <i data-lucide="user" class="text-gray-500 w-4 h-4"></i>
@@ -1037,7 +1037,7 @@
                     <span class="text-[10px] font-bold text-violet-400 uppercase tracking-wider font-mono block">Game Settings</span>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                            <label class="block text-[10px] text-gray-500 uppercase tracking-wider mb-1 font-mono">Keyboard Language</label>
+                            <label for="config-language" class="block text-[10px] text-gray-500 uppercase tracking-wider mb-1 font-mono">Keyboard Language</label>
                             <select id="config-language" class="w-full bg-gray-950 border border-gray-850 rounded-lg p-2 text-xs text-white focus:outline-none focus:border-violet-500 font-medium font-mono">
                                 <option value="en">English (Standard Quotes)</option>
                                 <option value="de">Deutsch (German Umlauts ä,ö,ü,ß)</option>
@@ -1045,7 +1045,7 @@
                             </select>
                         </div>
                         <div>
-                            <label class="block text-[10px] text-gray-500 uppercase tracking-wider mb-1 font-mono">Sentence Length</label>
+                            <label for="config-difficulty" class="block text-[10px] text-gray-500 uppercase tracking-wider mb-1 font-mono">Sentence Length</label>
                             <select id="config-difficulty" class="w-full bg-gray-950 border border-gray-850 rounded-lg p-2 text-xs text-white focus:outline-none focus:border-violet-500 font-medium font-mono">
                                 <option value="short">Short Phrases (Fast Reflexes)</option>
                                 <option value="medium" selected>Medium Quotes</option>
@@ -1116,7 +1116,7 @@
 
                     <!-- Expandable Join Input Area -->
                     <div id="join-input-area" class="hidden p-4 rounded-xl bg-gray-900/50 border border-gray-800 space-y-3 transition-all duration-300">
-                        <label class="block text-[10px] font-bold text-gray-400 uppercase font-mono">Paste Connection Key</label>
+                        <label for="input-room-id" class="block text-[10px] font-bold text-gray-400 uppercase font-mono">Paste Connection Key</label>
                         <div class="flex gap-2">
                             <input id="input-room-id" type="text" placeholder="Enter Room Key..." class="flex-grow bg-gray-950 border border-gray-800 rounded-lg px-3 py-2 text-white placeholder-gray-600 focus:outline-none focus:border-cyan-500 font-mono text-xs">
                             <button id="btn-submit-join" class="bg-cyan-500 hover:bg-cyan-600 text-gray-950 font-bold px-4 py-2 rounded-lg transition-colors text-xs flex items-center gap-1">
@@ -1167,7 +1167,7 @@
                         <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider font-mono block">Lobby Settings Matrix</span>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
-                                <label class="block text-[10px] text-gray-500 uppercase tracking-wider mb-1 font-mono">Lobby Keyboard Layout</label>
+                                <label for="lobby-select-language" class="block text-[10px] text-gray-500 uppercase tracking-wider mb-1 font-mono">Lobby Keyboard Layout</label>
                                 <select id="lobby-select-language" class="w-full bg-gray-950 border border-gray-850 rounded-lg p-2 text-xs text-white focus:outline-none focus:border-violet-500 font-medium font-mono">
                                     <option value="en">English (Quotes)</option>
                                     <option value="de">Deutsch (Umlauts)</option>
@@ -1175,7 +1175,7 @@
                                 </select>
                             </div>
                             <div>
-                                <label class="block text-[10px] text-gray-500 uppercase tracking-wider mb-1 font-mono">Sentence Block Pool</label>
+                                <label for="lobby-select-difficulty" class="block text-[10px] text-gray-500 uppercase tracking-wider mb-1 font-mono">Sentence Block Pool</label>
                                 <select id="lobby-select-difficulty" class="w-full bg-gray-950 border border-gray-850 rounded-lg p-2 text-xs text-white focus:outline-none focus:border-violet-500 font-medium font-mono">
                                     <option value="short">Short</option>
                                     <option value="medium">Medium</option>
@@ -1430,7 +1430,7 @@
                 <!-- High scores panel -->
                 <div id="stats-panel-scores">
                     <div class="mb-3">
-                        <label class="block text-[10px] text-gray-500 uppercase tracking-wider mb-1 font-mono">Language</label>
+                        <label for="hs-language-filter" class="block text-[10px] text-gray-500 uppercase tracking-wider mb-1 font-mono">Language</label>
                         <select id="hs-language-filter" class="w-full bg-gray-950 border border-gray-850 rounded-lg p-2 text-xs text-white focus:outline-none focus:border-violet-500 font-medium font-mono">
                             <option value="en">English</option>
                             <option value="de">Deutsch</option>
@@ -1438,7 +1438,7 @@
                         </select>
                     </div>
                     <div class="mb-3">
-                        <label class="block text-[10px] text-gray-500 uppercase tracking-wider mb-1 font-mono">Difficulty</label>
+                        <label for="hs-difficulty-filter" class="block text-[10px] text-gray-500 uppercase tracking-wider mb-1 font-mono">Difficulty</label>
                         <select id="hs-difficulty-filter" class="w-full bg-gray-950 border border-gray-850 rounded-lg p-2 text-xs text-white focus:outline-none focus:border-violet-500 font-medium font-mono">
                             <option value="short">Short</option>
                             <option value="medium">Medium</option>
