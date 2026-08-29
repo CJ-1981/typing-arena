@@ -922,7 +922,7 @@
     <div id="achievement-toast-container"></div>
 
     <!-- F1: PRESS START idle screen (shown on first page load, dismissed by click/key) -->
-    <div id="press-start-overlay">
+    <div id="press-start-overlay" role="button" tabindex="0" aria-label="Press start to enter TypeClash typing arena">
         <div class="ps-coin">🪙</div>
         <div class="ps-title">TypeClash</div>
         <div class="ps-subtitle">P2P Typing Arena</div>
@@ -958,7 +958,7 @@
                     <i id="theme-icon" data-lucide="sun" class="w-4 h-4"></i>
                     <span id="theme-label">DAY</span>
                 </button>
-                <button id="audio-toggle-btn" class="p-2 rounded-lg bg-gray-900 border border-gray-800 text-gray-400 hover:text-white transition-colors flex items-center gap-1.5 text-xs font-mono" title="Toggle Sound Synth">
+                <button id="audio-toggle-btn" class="p-2 rounded-lg bg-gray-900 border border-gray-800 text-gray-400 hover:text-white transition-colors flex items-center gap-1.5 text-xs font-mono" title="Toggle Sound Synth" aria-label="Toggle Sound Synth">
                     <i id="audio-icon" data-lucide="volume-2" class="w-4 h-4"></i>
                     <span>FX</span>
                 </button>
@@ -998,14 +998,14 @@
 
                 <div>
                     <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2 font-mono">Avatar Theme Color</label>
-                    <div class="grid grid-cols-6 gap-2.5" id="avatar-color-grid">
+                    <div class="grid grid-cols-6 gap-2.5" id="avatar-color-grid" role="group" aria-label="Avatar Theme Color">
                         <!-- Loaded dynamically -->
                     </div>
                 </div>
 
                 <div>
                     <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2 font-mono">Avatar Character</label>
-                    <div class="grid grid-cols-6 gap-2" id="avatar-emoji-grid">
+                    <div class="grid grid-cols-6 gap-2" id="avatar-emoji-grid" role="group" aria-label="Avatar Character">
                         <!-- Loaded dynamically -->
                     </div>
                 </div>
@@ -1064,7 +1064,7 @@
                             <span class="text-[10px] text-gray-500">Strips casing & all punctuation for speed.</span>
                         </div>
                         <label class="relative inline-flex items-center cursor-pointer">
-                            <input type="checkbox" id="config-flash-mode" class="sr-only peer">
+                            <input type="checkbox" id="config-flash-mode" class="sr-only peer" aria-label="Flash Typing Mode">
                             <div class="w-9 h-5 bg-gray-850 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-gray-400 after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all flash-toggle-track peer-checked:after:bg-white"></div>
                         </label>
                     </div>
@@ -1191,7 +1191,7 @@
                                 Synchronize Flash Mode
                             </span>
                             <label class="relative inline-flex items-center cursor-pointer">
-                                <input type="checkbox" id="lobby-flash-mode" class="sr-only peer">
+                                <input type="checkbox" id="lobby-flash-mode" class="sr-only peer" aria-label="Synchronize Flash Mode">
                                 <div class="w-9 h-5 bg-gray-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-gray-500 after:border-gray-400 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-violet-600"></div>
                             </label>
                         </div>
@@ -3364,11 +3364,14 @@
             AVATAR_COLORS.forEach((color, idx) => {
                 const btn = document.createElement('button');
                 btn.type = 'button';
-                btn.className = `h-10 rounded-xl transition-all relative border-2 ${color.class} ${State.avatarColorIdx === idx ? 'border-white scale-105 player-ring-swatch' : 'border-transparent opacity-80 hover:opacity-100 hover:scale-102'}`;
+                const isSelected = State.avatarColorIdx === idx;
+                btn.className = `h-10 rounded-xl transition-all relative border-2 ${color.class} ${isSelected ? 'border-white scale-105 player-ring-swatch' : 'border-transparent opacity-80 hover:opacity-100 hover:scale-102'}`;
                 btn.title = color.name;
+                btn.setAttribute('aria-label', color.name);
+                btn.setAttribute('aria-pressed', isSelected ? 'true' : 'false');
                 btn.onclick = () => selectAvatarColor(idx);
                 
-                if (State.avatarColorIdx === idx) {
+                if (isSelected) {
                     btn.innerHTML = `<span class="absolute inset-0 flex items-center justify-center"><i data-lucide="check" class="w-5 h-5 text-white"></i></span>`;
                 }
                 DOM.avatarColorGrid.appendChild(btn);
@@ -3380,8 +3383,11 @@
             AVATAR_EMOJIS.forEach((emoji, idx) => {
                 const btn = document.createElement('button');
                 btn.type = 'button';
-                btn.className = `emoji-swatch ${State.avatarEmojiIdx === idx ? 'is-selected player-ring-swatch' : ''}`;
+                const isSelected = State.avatarEmojiIdx === idx;
+                btn.className = `emoji-swatch ${isSelected ? 'is-selected player-ring-swatch' : ''}`;
                 btn.title = emoji.name;
+                btn.setAttribute('aria-label', emoji.name);
+                btn.setAttribute('aria-pressed', isSelected ? 'true' : 'false');
                 btn.textContent = emoji.char;
                 btn.onclick = () => selectAvatarEmoji(idx);
                 DOM.avatarEmojiGrid.appendChild(btn);
